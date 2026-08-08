@@ -1,0 +1,25 @@
+<?php
+
+return [
+    'title' => 'Items & Products Directory',
+    'inventory_management' => 'Inventory & Items Management',
+    'add_new_item' => 'Add New Item',
+    'edit_item' => 'Edit Item',
+    'item_code' => 'Item Code / Barcode',
+    'item_name' => 'Item Name',
+    'category' => 'Category',
+    'units' => 'Units of Measure',
+    'cost_price' => 'Cost Price',
+    'prices' => 'Selling Prices',
+    'total_stock' => 'Total Stock',
+    'wholesale_unit' => 'Wholesale Unit',
+    'base_unit' => 'Base Unit',
+    'wholesale_price' => 'Wholesale Price',
+    'retail_price' => 'Retail Price',
+    'reorder_limit' => 'Reorder Point',
+    'available' => 'Available',
+    'disabled' => 'Disabled',
+    'uncategorized' => 'Uncategorized',
+    'piece' => 'Piece',
+    'carton' => 'Carton',
+];

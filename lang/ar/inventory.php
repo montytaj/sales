@@ -1,0 +1,25 @@
+<?php
+
+return [
+    'title' => 'دليل الأصناف والمنتجات',
+    'inventory_management' => 'إدارة المخزون والأصناف',
+    'add_new_item' => 'إضافة صنف جديد',
+    'edit_item' => 'تعديل صنف',
+    'item_code' => 'كود الصنف / الباركود',
+    'item_name' => 'اسم الصنف',
+    'category' => 'التصنيف',
+    'units' => 'وحدات القياس',
+    'cost_price' => 'سعر التكلفة',
+    'prices' => 'أسعار البيع',
+    'total_stock' => 'إجمالي المخزون',
+    'wholesale_unit' => 'وحدة الجملة',
+    'base_unit' => 'الوحدة الأساسية (فرادي)',
+    'wholesale_price' => 'سعر الجملة',
+    'retail_price' => 'سعر القطاعي',
+    'reorder_limit' => 'حد إعادة الطلب',
+    'available' => 'متاح',
+    'disabled' => 'معطل',
+    'uncategorized' => 'غير مصنف',
+    'piece' => 'قطعة',
+    'carton' => 'كرتونة',
+];
