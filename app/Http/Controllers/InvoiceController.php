@@ -29,6 +29,11 @@ class InvoiceController extends Controller
 
         $query = Invoice::with(['customer', 'branch', 'warehouse']);
 
+        $user = auth()->user();
+        if ($user && !$user->hasRole(['system-admin', 'general-manager']) && $user->main_branch_id) {
+            $query->where('branch_id', $user->main_branch_id);
+        }
+
         if ($request->filled('search')) {
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
@@ -79,9 +84,35 @@ class InvoiceController extends Controller
             'items.*.unit_price' => 'required|numeric|min:0',
         ]);
 
+        // Pre-validate stock availability for all items in the chosen warehouse
+        $itemBaseQtyTotals = [];
+        foreach ($request->items as $row) {
+            $item = InventoryItem::find($row['inventory_item_id']);
+            $unit = Unit::find($row['unit_id']);
+            if (!$item || !$unit) continue;
+
+            $conversion = ($item->wholesale_unit_id == $unit->id) ? (float)$item->conversion_factor : 1.0;
+            $qtyInBase = (float)$row['quantity'] * $conversion;
+            $itemBaseQtyTotals[$item->id] = ($itemBaseQtyTotals[$item->id] ?? 0) + $qtyInBase;
+        }
+
+        foreach ($itemBaseQtyTotals as $itemId => $totalRequiredBase) {
+            $invItem = InventoryItem::find($itemId);
+            $whItem = WarehouseItem::where('warehouse_id', $request->warehouse_id)
+                ->where('inventory_item_id', $itemId)
+                ->first();
+
+            $availableStock = $whItem ? max(0, (float)$whItem->qty_in_base_units) : 0;
+            if ($totalRequiredBase > $availableStock) {
+                $unitName = $invItem->baseUnit?->name ?? 'قطعة';
+                return redirect()->back()->withInput()->with('error', "عفواً، الكمية المطلوبة من الصنف ({$invItem->name}) وهي ({$totalRequiredBase} {$unitName}) تتجاوز الرصيد المتوفر بالمخزن ({$availableStock} {$unitName}).");
+            }
+        }
+
         DB::beginTransaction();
         try {
-            $invoiceNumber = 'INV-' . date('Ymd') . '-' . str_pad(Invoice::count() + 1, 4, '0', STR_PAD_LEFT);
+            $maxId = (int) DB::table('invoices')->max('id');
+            $invoiceNumber = 'INV-' . date('Ymd') . '-' . str_pad($maxId + 1, 4, '0', STR_PAD_LEFT);
             $subtotal = 0;
             $totalTax = 0;
 
@@ -131,12 +162,13 @@ class InvoiceController extends Controller
                     'total' => $lineTotal,
                 ]);
 
-                // Deduct stock from destination warehouse
+                // Deduct stock safely from destination warehouse
                 $whItem = WarehouseItem::firstOrCreate(
                     ['warehouse_id' => $request->warehouse_id, 'inventory_item_id' => $item->id],
                     ['qty_in_base_units' => 0]
                 );
-                $whItem->decrement('qty_in_base_units', $qtyInBase);
+                $newQty = max(0, (float)$whItem->qty_in_base_units - $qtyInBase);
+                $whItem->update(['qty_in_base_units' => $newQty]);
             }
 
             $totalAmount = $subtotal + $totalTax;

@@ -341,8 +341,9 @@ class ReportService
         $wasteRate = $totalPieces > 0 ? round(($wastePieces / $totalPieces) * 100, 2) : 0;
 
         return [
-            'workOrders' => $query->latest()->paginate(20)->withQueryString(),
-            'work_orders' => $query->latest()->paginate(20)->withQueryString(),
+            'raw_query' => $summaryQuery,
+            'workOrders' => (clone $query)->latest()->paginate(20)->withQueryString(),
+            'work_orders' => (clone $query)->latest()->paginate(20)->withQueryString(),
             'total_count' => $summaryQuery->count(),
             'total_sheets' => $totalSheets,
             'good_pieces' => $goodPieces,
@@ -378,6 +379,7 @@ class ReportService
             ->sum('amount');
 
         return [
+            'raw_query' => $summaryQuery,
             'projects' => $query
                 ->withSum('expenses as total_expenses', 'amount')
                 ->latest()
@@ -424,6 +426,7 @@ class ReportService
         $cashboxes = Cashbox::with('branch')->get();
 
         return [
+            'raw_query' => $summaryQuery,
             'vouchers' => $vouchersQuery->latest()->paginate(20)->withQueryString(),
             'cashboxes' => $cashboxes,
             'total_receipts' => $totalReceipts,
@@ -439,26 +442,29 @@ class ReportService
     {
         $query = InventoryItem::with(['category', 'baseUnit', 'wholesaleUnit', 'warehouseItems']);
 
-        if (!empty($filters['category_id'])) {
-            $query->where('category_id', $filters['category_id']);
+        $categoryId = $filters['category_id'] ?? $filters['category'] ?? null;
+        if (!empty($categoryId)) {
+            $query->where('category_id', $categoryId);
         }
         if (!empty($filters['search'])) {
             $search = $filters['search'];
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
                   ->orWhere('item_code', 'like', "%{$search}%")
+                  ->orWhere('code', 'like', "%{$search}%")
                   ->orWhere('barcode', 'like', "%{$search}%");
             });
         }
 
         $summaryQuery = clone $query;
 
-        $items = $query->paginate(20)->withQueryString();
+        $items = (clone $query)->paginate(20)->withQueryString();
         $movements = StockMovement::with(['item', 'creator', 'warehouse'])->latest()->take(20)->get();
 
-        $totalStockQty = (float) DB::table('warehouse_items')->sum('qty_in_base_units');
+        $totalStockQty = max(0, (float) DB::table('warehouse_items')->where('qty_in_base_units', '>', 0)->sum('qty_in_base_units'));
 
         return [
+            'raw_query' => $summaryQuery,
             'items' => $items,
             'movements' => $movements,
             'total_items' => $summaryQuery->count(),

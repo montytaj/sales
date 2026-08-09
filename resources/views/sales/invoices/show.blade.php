@@ -24,7 +24,7 @@
                         <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
                             تحديث حالة الفاتورة
                         </button>
-                        <ul class="dropdown-menu dropdown-menu-end">
+                        <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3">
                             @foreach (__('sales.invoice_statuses') as $statusKey => $statusName)
                                 <li>
                                     <form method="POST" action="{{ route('invoices.update-status', $invoice) }}">

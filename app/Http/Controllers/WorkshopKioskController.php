@@ -30,8 +30,9 @@ class WorkshopKioskController extends Controller
         return view('workshop.kiosk.index', compact('activeOrders'));
     }
 
-    public function action(Request $request, $locale, WorkOrder $workOrder)
+    public function action(Request $request, $locale = 'ar', $workOrder = null)
     {
+        $workOrder = ($workOrder instanceof WorkOrder) ? $workOrder : WorkOrder::findOrFail($workOrder);
         $this->authorize('execute-work-orders');
 
         $validated = $request->validate([

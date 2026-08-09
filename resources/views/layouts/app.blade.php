@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>{{ config('app.name', 'Workshop ERP') }} - {{ $title ?? __('general.dashboard') }}</title>
+    <title>{{ config('app.name', 'Workshop ERP') }} - {{ View::hasSection('title') ? View::getSection('title') : ($title ?? __('general.dashboard')) }}</title>
 
     <!-- Bootstrap 5.3 CSS (RTL / LTR) -->
     @if(app()->getLocale() == 'ar')
@@ -215,7 +215,7 @@
     <x-header />
 
     <!-- Main Outer Wrapper -->
-    <div class="d-flex flex-grow-1 position-relative align-items-stretch" style="min-width: 0; max-width: 100vw; overflow-x: hidden; min-height: calc(100vh - 70px);">
+    <div class="d-flex flex-grow-1 position-relative align-items-stretch" style="min-width: 0; max-width: 100vw; overflow-x: hidden; min-height: 100vh;">
         <!-- Sidebar Navigation -->
         <x-sidebar />
 
@@ -232,9 +232,11 @@
                         $isRtl = app()->getLocale() == 'ar';
                         $circlePosition = $isRtl ? 'left: -15px;' : 'right: -15px;';
                     @endphp
-                    <div class="page-header-card card border-0 shadow-sm rounded-4 p-3.5 p-md-4 mb-4 position-relative overflow-hidden">
+                    <div class="page-header-card card border-0 shadow-sm rounded-4 p-3.5 p-md-4 mb-4 position-relative" style="z-index: 10;">
                         <!-- Compact Semi-circle Backdrop Shape in Corner with Emerald Accent Gradient -->
-                        <div style="position: absolute; top: -15px; {{ $circlePosition }} width: 85px; height: 85px; border-radius: 50%; background: linear-gradient(135deg, rgba(16, 185, 129, 0.18), rgba(59, 130, 246, 0.12)); pointer-events: none; z-index: 0;"></div>
+                        <div style="position: absolute; inset: 0; overflow: hidden; border-radius: inherit; pointer-events: none; z-index: 0;">
+                            <div style="position: absolute; top: -15px; {{ $circlePosition }} width: 85px; height: 85px; border-radius: 50%; background: linear-gradient(135deg, rgba(16, 185, 129, 0.18), rgba(59, 130, 246, 0.12)); pointer-events: none;"></div>
+                        </div>
 
                         <div class="position-relative" style="z-index: 2;">
                             {{ $header }}
@@ -381,6 +383,7 @@
             const isCollapsed = localStorage.getItem(STORAGE_KEY) === 'true';
             if (isCollapsed && sidebar && window.innerWidth >= 992) {
                 sidebar.classList.add('sidebar-collapsed');
+                document.body.classList.add('sidebar-collapsed');
             }
 
             // Toggle Sidebar click handler
@@ -392,10 +395,24 @@
                     } else {
                         // Desktop Collapsed mode toggle
                         sidebar.classList.toggle('sidebar-collapsed');
+                        document.body.classList.toggle('sidebar-collapsed');
                         const collapsedNow = sidebar.classList.contains('sidebar-collapsed');
                         localStorage.setItem(STORAGE_KEY, collapsedNow ? 'true' : 'false');
                     }
                 });
+            }
+
+            // Isolated Independent Sidebar Wheel Scroll
+            const sidebarEl = document.getElementById('sidebar');
+            if (sidebarEl) {
+                sidebarEl.addEventListener('wheel', function(e) {
+                    const targetContainer = sidebarEl.querySelector('.sidebar-sticky-wrapper') || sidebarEl.querySelector('.sidebar-menu-wrapper') || sidebarEl;
+                    if (targetContainer) {
+                        targetContainer.scrollTop += e.deltaY;
+                    }
+                    e.preventDefault();
+                    e.stopPropagation();
+                }, { passive: false });
             }
 
             // Initialize Bootstrap Tooltips globally
@@ -439,19 +456,6 @@
                         });
                     }
                 });
-            }
-
-            // Isolated Independent Sidebar Wheel Scroll
-            const sidebarEl = document.getElementById('sidebar');
-            const menuWrapperEl = document.querySelector('.sidebar-menu-wrapper');
-            if (sidebarEl && menuWrapperEl) {
-                sidebarEl.addEventListener('wheel', function(e) {
-                    if (menuWrapperEl.scrollHeight > menuWrapperEl.clientHeight) {
-                        menuWrapperEl.scrollTop += e.deltaY;
-                        e.preventDefault();
-                        e.stopPropagation();
-                    }
-                }, { passive: false });
             }
         });
     </script>

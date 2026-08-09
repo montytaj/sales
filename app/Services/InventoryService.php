@@ -18,16 +18,11 @@ class InventoryService
      */
     public function getStockQuantity(InventoryItem $item, ?Warehouse $warehouse = null): float
     {
-        $query = StockMovement::where('item_id', $item->id);
-
         if ($warehouse) {
-            $query->where('warehouse_id', $warehouse->id);
+            $whItem = \App\Models\WarehouseItem::where('inventory_item_id', $item->id)->where('warehouse_id', $warehouse->id)->first();
+            return max(0, (float)($whItem?->qty_in_base_units ?? 0));
         }
-
-        $inQty = (float) (clone $query)->whereIn('movement_type', ['in', 'return', 'adjustment'])->sum('quantity');
-        $outQty = (float) (clone $query)->whereIn('movement_type', ['out', 'reservation', 'waste'])->sum('quantity');
-
-        return round($inQty - $outQty, 2);
+        return max(0, (float)$item->warehouseItems()->sum('qty_in_base_units'));
     }
 
     /**
@@ -43,12 +38,10 @@ class InventoryService
         ?string $notes = null
     ): StockMovement {
         return DB::transaction(function () use ($warehouse, $item, $movementType, $quantity, $referenceType, $referenceId, $notes) {
-            $allowNegativeStock = setting('allow_negative_stock', false);
-
-            if (in_array($movementType, ['out', 'reservation', 'waste']) && !$allowNegativeStock) {
+            if (in_array($movementType, ['out', 'reservation', 'waste'])) {
                 $currentStock = $this->getStockQuantity($item, $warehouse);
                 if (($currentStock - $quantity) < 0) {
-                    throw new InvalidArgumentException("لا يمكن صرف الكمية المطلوب ({$quantity}) لعدم كفاية رصيد المخزون الحالي ({$currentStock}) حسب إعدادات النظام.");
+                    throw new InvalidArgumentException("عفواً، لا يمكن صرف الكمية المطلوبة ({$quantity}) للصنف ({$item->name}) لعدم كفاية رصيد المخزون الحالي بالمخزن ({$currentStock}).");
                 }
             }
 
@@ -64,6 +57,19 @@ class InventoryService
                 'notes' => $notes,
                 'created_by' => $userId,
             ]);
+
+            // Sync with warehouse_items table
+            $whItem = \App\Models\WarehouseItem::firstOrCreate(
+                ['warehouse_id' => $warehouse->id, 'inventory_item_id' => $item->id],
+                ['qty_in_base_units' => 0]
+            );
+
+            if (in_array($movementType, ['in', 'return', 'adjustment'])) {
+                $whItem->increment('qty_in_base_units', $quantity);
+            } else if (in_array($movementType, ['out', 'reservation', 'waste'])) {
+                $newQty = max(0, (float)$whItem->qty_in_base_units - $quantity);
+                $whItem->update(['qty_in_base_units' => $newQty]);
+            }
 
             ActivityLog::log(
                 'stock_movement_recorded',

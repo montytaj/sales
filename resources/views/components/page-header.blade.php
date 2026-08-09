@@ -12,9 +12,11 @@
     $circlePosition = $isRtl ? 'left: -15px;' : 'right: -15px;';
 @endphp
 
-<div class="page-header-card card border-0 shadow-sm rounded-4 p-3.5 p-md-4 mb-4 position-relative overflow-hidden">
+<div class="page-header-card card border-0 shadow-sm rounded-4 p-3.5 p-md-4 mb-4 position-relative" style="z-index: 10;">
     <!-- Compact Semi-circle Backdrop Shape in Corner with Emerald Accent Gradient -->
-    <div style="position: absolute; top: -15px; {{ $circlePosition }} width: 85px; height: 85px; border-radius: 50%; background: linear-gradient(135deg, rgba(16, 185, 129, 0.18), rgba(59, 130, 246, 0.12)); pointer-events: none; z-index: 0;"></div>
+    <div style="position: absolute; inset: 0; overflow: hidden; border-radius: inherit; pointer-events: none; z-index: 0;">
+        <div style="position: absolute; top: -15px; {{ $circlePosition }} width: 85px; height: 85px; border-radius: 50%; background: linear-gradient(135deg, rgba(16, 185, 129, 0.18), rgba(59, 130, 246, 0.12)); pointer-events: none;"></div>
+    </div>
 
     <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-md-between gap-3 position-relative" style="z-index: 2;">
         <div class="page-header-info">

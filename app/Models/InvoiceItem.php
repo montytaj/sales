@@ -12,6 +12,9 @@ class InvoiceItem extends Model
 
     protected $fillable = [
         'invoice_id',
+        'inventory_item_id',
+        'unit_id',
+        'qty_in_base_units',
         'service_id',
         'item_name',
         'description',
@@ -28,6 +31,7 @@ class InvoiceItem extends Model
 
     protected $casts = [
         'quantity' => 'float',
+        'qty_in_base_units' => 'float',
         'unit_price' => 'float',
         'discount_amount' => 'float',
         'tax_percent' => 'float',
@@ -39,6 +43,16 @@ class InvoiceItem extends Model
     public function invoice(): BelongsTo
     {
         return $this->belongsTo(Invoice::class);
+    }
+
+    public function item(): BelongsTo
+    {
+        return $this->belongsTo(InventoryItem::class, 'inventory_item_id');
+    }
+
+    public function unit(): BelongsTo
+    {
+        return $this->belongsTo(Unit::class);
     }
 
     public function service(): BelongsTo

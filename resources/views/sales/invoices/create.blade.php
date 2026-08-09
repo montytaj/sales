@@ -109,6 +109,13 @@
         const units = @json($units);
         let rowIndex = 0;
 
+        function getWarehouseStockForItem(itemId, warehouseId) {
+            const item = inventoryItems.find(i => i.id == itemId);
+            if (!item || !item.warehouse_items || !warehouseId) return 0;
+            const whItem = item.warehouse_items.find(w => w.warehouse_id == warehouseId);
+            return whItem ? Math.max(0, parseFloat(whItem.qty_in_base_units) || 0) : 0;
+        }
+
         function addInvoiceRow() {
             const tableBody = document.querySelector('#invoiceItemsTable tbody');
             const tr = document.createElement('tr');
@@ -129,6 +136,7 @@
                     <select name="items[${rowIndex}][inventory_item_id]" class="form-select item-select" onchange="onItemChange(${rowIndex})" required>
                         <option value="">-- اختر الصنف --</option>
                     </select>
+                    <small class="stock-hint text-muted d-block mt-1 font-mono fs-8"></small>
                 </td>
                 <td>
                     <select name="items[${rowIndex}][unit_id]" class="form-select unit-select" onchange="onUnitChange(${rowIndex})" required>
@@ -136,10 +144,10 @@
                     </select>
                 </td>
                 <td>
-                    <input type="number" step="0.01" name="items[${rowIndex}][quantity]" class="form-control qty-input" value="1" oninput="calculateRowTotal(${rowIndex})" required>
+                    <input type="number" step="0.01" min="0.01" name="items[${rowIndex}][quantity]" class="form-control qty-input" value="1" oninput="calculateRowTotal(${rowIndex})" required>
                 </td>
                 <td>
-                    <input type="number" step="0.01" name="items[${rowIndex}][unit_price]" class="form-control price-input" value="0.00" oninput="calculateRowTotal(${rowIndex})" required>
+                    <input type="number" step="0.01" min="0" name="items[${rowIndex}][unit_price]" class="form-control price-input" value="0.00" oninput="calculateRowTotal(${rowIndex})" required>
                 </td>
                 <td>
                     <span class="row-subtotal font-mono fw-bold text-dark">0.00</span>
@@ -189,14 +197,16 @@
             unitSelect.innerHTML = '';
             if (item) {
                 if (item.wholesale_unit) {
-                    unitSelect.innerHTML += `<option value="${item.wholesale_unit_id}" data-price="${item.wholesale_price}">كرتونة / بالجملة (${item.wholesale_unit.name})</option>`;
+                    unitSelect.innerHTML += `<option value="${item.wholesale_unit_id}" data-price="${item.wholesale_price}" data-is-wholesale="1">كرتونة / بالجملة (${item.wholesale_unit.name})</option>`;
                 }
                 if (item.base_unit) {
-                    unitSelect.innerHTML += `<option value="${item.base_unit_id}" data-price="${item.retail_price}">قطعة / بالفرادي (${item.base_unit.name})</option>`;
+                    unitSelect.innerHTML += `<option value="${item.base_unit_id}" data-price="${item.retail_price}" data-is-wholesale="0">قطعة / بالفرادي (${item.base_unit.name})</option>`;
                 }
                 onUnitChange(idx);
             } else {
                 unitSelect.innerHTML = '<option value="">-- حدد الوحدة --</option>';
+                const stockHint = row.querySelector('.stock-hint');
+                if (stockHint) stockHint.innerHTML = '';
             }
         }
 
@@ -212,6 +222,28 @@
             calculateRowTotal(idx);
         }
 
+        function updateAllRowsStockHints() {
+            const warehouseSelect = document.querySelector('select[name="warehouse_id"]');
+            const selectedWh = warehouseSelect ? warehouseSelect.value : null;
+
+            document.querySelectorAll('#invoiceItemsTable tbody tr').forEach(tr => {
+                const itemId = tr.querySelector('.item-select').value;
+                const stockHint = tr.querySelector('.stock-hint');
+                if (itemId && selectedWh && stockHint) {
+                    const item = inventoryItems.find(i => i.id == itemId);
+                    const availStock = getWarehouseStockForItem(itemId, selectedWh);
+                    const baseUnitName = item?.base_unit?.name || 'قطعة';
+                    if (availStock > 0) {
+                        stockHint.className = 'stock-hint text-success font-mono fs-8 d-block mt-1';
+                        stockHint.innerHTML = `<i class="bi bi-check-circle me-1"></i>المتاح بالمخزن: ${availStock} ${baseUnitName}`;
+                    } else {
+                        stockHint.className = 'stock-hint text-danger font-mono fs-8 d-block mt-1';
+                        stockHint.innerHTML = `<i class="bi bi-x-circle me-1"></i>غير متوفر بالمخزن (0)`;
+                    }
+                }
+            });
+        }
+
         function calculateRowTotal(idx) {
             const row = document.getElementById(`row_${idx}`);
             const qty = parseFloat(row.querySelector('.qty-input').value) || 0;
@@ -219,6 +251,7 @@
             const subtotal = qty * price;
 
             row.querySelector('.row-subtotal').innerText = subtotal.toFixed(2);
+            updateAllRowsStockHints();
             calculateGrandTotal();
         }
 
@@ -248,6 +281,56 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             addInvoiceRow();
+
+            const warehouseSelect = document.querySelector('select[name="warehouse_id"]');
+            if (warehouseSelect) {
+                warehouseSelect.addEventListener('change', updateAllRowsStockHints);
+            }
+
+            const invoiceForm = document.getElementById('invoiceForm');
+            if (invoiceForm) {
+                invoiceForm.addEventListener('submit', function(e) {
+                    const selectedWh = warehouseSelect ? warehouseSelect.value : null;
+                    if (!selectedWh) return;
+
+                    let itemTotalsBase = {};
+                    let hasError = false;
+                    let errorMessage = '';
+
+                    const rows = document.querySelectorAll('#invoiceItemsTable tbody tr');
+                    rows.forEach(tr => {
+                        const itemId = tr.querySelector('.item-select').value;
+                        const unitId = tr.querySelector('.unit-select').value;
+                        const qty = parseFloat(tr.querySelector('.qty-input').value) || 0;
+                        const item = inventoryItems.find(i => i.id == itemId);
+
+                        if (itemId && unitId && qty > 0 && item) {
+                            const isWholesale = (unitId == item.wholesale_unit_id);
+                            const factor = isWholesale ? (parseFloat(item.conversion_factor) || 1) : 1;
+                            const qtyInBase = qty * factor;
+                            itemTotalsBase[itemId] = (itemTotalsBase[itemId] || 0) + qtyInBase;
+                        }
+                    });
+
+                    for (const itemId in itemTotalsBase) {
+                        const requiredBase = itemTotalsBase[itemId];
+                        const availStock = getWarehouseStockForItem(itemId, selectedWh);
+                        const item = inventoryItems.find(i => i.id == itemId);
+
+                        if (requiredBase > availStock) {
+                            hasError = true;
+                            const unitName = item?.base_unit?.name || 'قطعة';
+                            errorMessage = `عفواً، الكمية المطلوبة من الصنف (${item?.name || ''}) وهي ${requiredBase} ${unitName} تتجاوز الرصيد المتوفر بالمخزن المختار (${availStock} ${unitName}).`;
+                            break;
+                        }
+                    }
+
+                    if (hasError) {
+                        e.preventDefault();
+                        alert(errorMessage);
+                    }
+                });
+            }
         });
     </script>
 </x-app-layout>

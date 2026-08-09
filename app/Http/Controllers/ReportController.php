@@ -165,10 +165,25 @@ class ReportController extends Controller
 
         if ($request->input('export') === 'csv') {
 
+            $headers = ['رقم الفاتورة', 'العميل', 'الإجمالي قبل الضريبة', 'الضريبة', 'الصافي', 'المدفوع', 'المتبقي', 'الحالة', 'التاريخ'];
+
             return $this->exportCsv(
                 $salesData['raw_query']->get(),
                 'sales_report.csv',
-                ['invoice_number', 'customer.name', 'subtotal', 'tax_amount', 'net_amount', 'paid_amount', 'remaining_amount', 'status', 'created_at']
+                $headers,
+                function ($invoice) {
+                    return [
+                        $invoice->invoice_number,
+                        $invoice->customer?->name ?? '-',
+                        number_format((float) $invoice->subtotal, 2, '.', ''),
+                        number_format((float) $invoice->tax_amount, 2, '.', ''),
+                        number_format((float) $invoice->total_amount, 2, '.', ''),
+                        number_format((float) $invoice->paid_amount, 2, '.', ''),
+                        number_format((float) ($invoice->total_amount - $invoice->paid_amount), 2, '.', ''),
+                        $invoice->status,
+                        $invoice->created_at?->format('Y-m-d H:i') ?? '-',
+                    ];
+                }
             );
         }
 
@@ -211,10 +226,27 @@ class ReportController extends Controller
 
         if ($request->input('export') === 'csv') {
 
+            $headers = ['رقم أمر العمل', 'العميل', 'عدد الألواح', 'القطع السليمة', 'القطع الهالكة', 'الحالة', 'الأولوية', 'التاريخ'];
+            $items = isset($workshopData['raw_query'])
+                ? $workshopData['raw_query']->get()
+                : WorkOrder::with(['customer', 'branch'])->latest()->get();
+
             return $this->exportCsv(
-                WorkOrder::with(['customer', 'branch'])->latest()->get(),
+                $items,
                 'workshop_report.csv',
-                ['work_order_number', 'customer.name', 'sheet_count', 'good_pieces', 'waste_pieces', 'status', 'priority', 'created_at']
+                $headers,
+                function ($workOrder) {
+                    return [
+                        $workOrder->work_order_number,
+                        $workOrder->customer?->name ?? '-',
+                        $workOrder->sheet_count,
+                        $workOrder->good_pieces,
+                        $workOrder->waste_pieces,
+                        $workOrder->status,
+                        $workOrder->priority,
+                        $workOrder->created_at?->format('Y-m-d H:i') ?? '-',
+                    ];
+                }
             );
         }
 
@@ -233,10 +265,26 @@ class ReportController extends Controller
 
         if ($request->input('export') === 'csv') {
 
+            $headers = ['رقم المشروع', 'اسم المشروع', 'العميل', 'الميزانية', 'إجمالي المصاريف', 'نسبة الإنجاز', 'الحالة'];
+            $items = isset($projectsData['raw_query'])
+                ? $projectsData['raw_query']->get()
+                : $projectsData['projects']->items();
+
             return $this->exportCsv(
-                $projectsData['projects']->items(),
+                $items,
                 'projects_report.csv',
-                ['project_number', 'name', 'customer.name', 'budget', 'total_expenses', 'completion_percentage', 'status']
+                $headers,
+                function ($project) {
+                    return [
+                        $project->project_number,
+                        $project->name,
+                        $project->customer?->name ?? '-',
+                        number_format((float) $project->budget, 2, '.', ''),
+                        number_format((float) ($project->total_expenses ?? 0), 2, '.', ''),
+                        $project->completion_percentage . '%',
+                        $project->status,
+                    ];
+                }
             );
         }
 
@@ -255,10 +303,25 @@ class ReportController extends Controller
 
         if ($request->input('export') === 'csv') {
 
+            $headers = ['رقم السند', 'النوع', 'المبلغ', 'الخزينة', 'الفرع', 'تاريخ الدفع'];
+            $items = isset($financialData['raw_query'])
+                ? $financialData['raw_query']->get()
+                : $financialData['vouchers']->items();
+
             return $this->exportCsv(
-                $financialData['vouchers']->items(),
+                $items,
                 'financial_report.csv',
-                ['voucher_number', 'type', 'amount', 'cashbox.name', 'branch.name', 'payment_date']
+                $headers,
+                function ($voucher) {
+                    return [
+                        $voucher->voucher_number,
+                        $voucher->type === 'receipt' ? 'قبض' : 'صرف',
+                        number_format((float) $voucher->amount, 2, '.', ''),
+                        $voucher->cashbox?->name ?? '-',
+                        $voucher->branch?->name ?? '-',
+                        $voucher->payment_date ? date('Y-m-d', strtotime($voucher->payment_date)) : '-',
+                    ];
+                }
             );
         }
 
@@ -271,15 +334,35 @@ class ReportController extends Controller
     public function inventory(Request $request)
     {
 
-        $filters = $request->only(['category', 'search']);
+        $filters = $request->only(['category_id', 'category', 'search']);
         $inventoryData = $this->reportService->getInventoryReport($filters);
 
         if ($request->input('export') === 'csv') {
 
+            $items = isset($inventoryData['raw_query'])
+                ? $inventoryData['raw_query']->get()
+                : $inventoryData['items']->items();
+
+            $headers = ['كود الصنف', 'اسم الصنف', 'التصنيف', 'الوحدة الأساسية', 'الكمية الحالية', 'حد الطلب الأدنى', 'تكلفة الوحدة (ر.س)', 'حالة الرصيد'];
+
             return $this->exportCsv(
-                $inventoryData['items']->items(),
+                $items,
                 'inventory_report.csv',
-                ['sku', 'item_name', 'category', 'unit', 'quantity', 'min_quantity', 'unit_cost']
+                $headers,
+                function ($item) {
+                    $qty = max(0, (float) $item->warehouseItems->sum('qty_in_base_units'));
+                    $minQty = (float) ($item->min_stock_alert ?? 0);
+                    return [
+                        $item->item_code ?? $item->code ?? '-',
+                        $item->name ?? '-',
+                        $item->category?->name ?? '-',
+                        $item->baseUnit?->name ?? $item->unit ?? 'قطعة',
+                        number_format($qty, 2, '.', ''),
+                        number_format($minQty, 2, '.', ''),
+                        number_format((float) ($item->cost_price ?? 0), 2, '.', ''),
+                        $qty <= $minQty ? 'منخفض المخزون' : 'رصيد آمن',
+                    ];
+                }
             );
         }
 
@@ -338,7 +421,7 @@ class ReportController extends Controller
     /**
      * Utility CSV Exporter.
      */
-    protected function exportCsv($collection, string $filename, array $columns)
+    protected function exportCsv($collection, string $filename, array $columns, ?callable $rowMapper = null)
     {
         $headers = [
             "Content-type" => "text/csv; charset=UTF-8",
@@ -348,20 +431,27 @@ class ReportController extends Controller
             "Expires" => "0"
         ];
 
-        $callback = function () use ($collection, $columns) {
+        $callback = function () use ($collection, $columns, $rowMapper) {
             $file = fopen('php://output', 'w');
             fputs($file, "\xEF\xBB\xBF");
             fputcsv($file, $columns);
 
             foreach ($collection as $row) {
-                $line = [];
-                foreach ($columns as $col) {
-                    $parts = explode('.', $col);
-                    $val = $row;
-                    foreach ($parts as $part) {
-                        $val = is_array($val) ? ($val[$part] ?? null) : ($val?->{$part} ?? '');
+                if ($rowMapper) {
+                    $line = $rowMapper($row);
+                } else {
+                    $line = [];
+                    foreach ($columns as $col) {
+                        $parts = explode('.', $col);
+                        $val = $row;
+                        foreach ($parts as $part) {
+                            $val = is_array($val) ? ($val[$part] ?? null) : ($val?->{$part} ?? '');
+                        }
+                        if (is_object($val) && !method_exists($val, '__toString')) {
+                            $val = '';
+                        }
+                        $line[] = (string) $val;
                     }
-                    $line[] = (string) $val;
                 }
                 fputcsv($file, $line);
             }

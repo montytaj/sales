@@ -165,6 +165,13 @@ class ReportTest extends TestCase
         $response->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
     }
 
+    public function test_inventory_report_csv_export(): void
+    {
+        $response = $this->actingAs($this->admin)->get("/ar/reports/inventory?export=csv");
+        $response->assertStatus(200);
+        $response->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
+    }
+
     public function test_customer_statement_print_view(): void
     {
         $response = $this->actingAs($this->admin)->get("/ar/reports/customer-statement?customer_id={$this->customer->id}&export=print");

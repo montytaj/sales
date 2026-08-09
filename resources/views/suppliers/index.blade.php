@@ -63,7 +63,7 @@
     <div class="card shadow-sm border-0">
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
+                <table class="table table-hover align-middle datatable mb-0">
                     <thead class="table-light">
                         <tr>
                             <th scope="col" class="ps-3">{{ __('suppliers.code') }}</th>

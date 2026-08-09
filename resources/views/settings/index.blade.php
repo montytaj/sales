@@ -651,9 +651,9 @@
                                         <label class="form-check-label font-bold text-slate-800 mb-0 cursor-pointer" for="allow_negative_inventory">
                                             {{ __('settings.allow_negative_inventory') }}
                                         </label>
-                                        <small class="text-muted d-block fs-8">{{ app()->getLocale() == 'ar' ? 'السماح بإصدار الفواتير حتى في حال عدم كفاية المخزون' : 'Allow sales without stock verification' }}</small>
+                                        <small class="text-danger d-block fs-8 font-bold"><i class="bi bi-shield-lock me-1"></i>ممنوع نهائياً وحظر دائم لمنع البيع بدون رصيد</small>
                                     </div>
-                                    <input class="form-check-input ms-3 fs-5" type="checkbox" name="allow_negative_inventory" value="1" id="allow_negative_inventory" {{ setting('allow_negative_inventory', false) ? 'checked' : '' }}>
+                                    <input class="form-check-input ms-3 fs-5" type="checkbox" name="allow_negative_inventory" value="0" id="allow_negative_inventory" disabled>
                                 </div>
                             </div>
 

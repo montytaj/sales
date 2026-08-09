@@ -19,29 +19,33 @@ class SettingsService
     {
         $cacheKey = "setting_{$key}_branch_" . ($branchId ?? 'global');
 
-        return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($key, $default, $branchId) {
-            // 1. Try branch specific override if branchId provided
-            if ($branchId) {
-                $branchSetting = Setting::where('key', $key)
-                    ->where('branch_id', $branchId)
+        try {
+            return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($key, $default, $branchId) {
+                // 1. Try branch specific override if branchId provided
+                if ($branchId) {
+                    $branchSetting = Setting::where('key', $key)
+                        ->where('branch_id', $branchId)
+                        ->first();
+
+                    if ($branchSetting !== null) {
+                        return $branchSetting->typed_value;
+                    }
+                }
+
+                // 2. Fallback to global setting (branch_id is null)
+                $globalSetting = Setting::where('key', $key)
+                    ->whereNull('branch_id')
                     ->first();
 
-                if ($branchSetting !== null) {
-                    return $branchSetting->typed_value;
+                if ($globalSetting !== null) {
+                    return $globalSetting->typed_value;
                 }
-            }
 
-            // 2. Fallback to global setting (branch_id is null)
-            $globalSetting = Setting::where('key', $key)
-                ->whereNull('branch_id')
-                ->first();
-
-            if ($globalSetting !== null) {
-                return $globalSetting->typed_value;
-            }
-
+                return $default;
+            });
+        } catch (\Throwable $e) {
             return $default;
-        });
+        }
     }
 
     /**

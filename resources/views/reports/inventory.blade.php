@@ -56,7 +56,7 @@
     <!-- Stock Table Card -->
     <div class="card card-custom overflow-hidden shadow-sm border-0 rounded-4 mb-4">
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
+            <table class="table table-hover align-middle datatable mb-0">
                 <thead class="bg-slate-50 border-bottom border-slate-200">
                     <tr>
                         <th scope="col" class="ps-3 text-slate-600 font-semibold fs-7">كود الصنف</th>
@@ -72,7 +72,7 @@
                 <tbody class="divide-y divide-slate-100 fs-7">
                     @forelse ($items as $item)
                         @php
-                            $qty = $item->warehouseItems->sum('qty_in_base_units');
+                            $qty = max(0, (float)$item->warehouseItems->sum('qty_in_base_units'));
                             $minQty = (float)($item->min_stock_alert ?? 0);
                         @endphp
                         <tr>

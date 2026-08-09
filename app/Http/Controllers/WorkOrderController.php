@@ -140,8 +140,9 @@ class WorkOrderController extends Controller
         return view('workshop.orders.show', compact('workOrder'));
     }
 
-    public function authorizeStart(Request $request, $locale, WorkOrder $workOrder)
+    public function authorizeStart(Request $request, $locale = 'ar', $workOrder = null)
     {
+        $workOrder = ($workOrder instanceof WorkOrder) ? $workOrder : WorkOrder::findOrFail($workOrder);
         $this->authorize('authorize-work-order-start');
 
         try {
@@ -152,8 +153,9 @@ class WorkOrderController extends Controller
         }
     }
 
-    public function overrideStart(Request $request, $locale, WorkOrder $workOrder)
+    public function overrideStart(Request $request, $locale = 'ar', $workOrder = null)
     {
+        $workOrder = ($workOrder instanceof WorkOrder) ? $workOrder : WorkOrder::findOrFail($workOrder);
         $this->authorize('override-work-order-start');
 
         $validated = $request->validate([
@@ -169,8 +171,9 @@ class WorkOrderController extends Controller
         }
     }
 
-    public function deliver(Request $request, $locale, WorkOrder $workOrder)
+    public function deliver(Request $request, $locale = 'ar', $workOrder = null)
     {
+        $workOrder = ($workOrder instanceof WorkOrder) ? $workOrder : WorkOrder::findOrFail($workOrder);
         $this->authorize('deliver-work-orders');
 
         $validated = $request->validate([

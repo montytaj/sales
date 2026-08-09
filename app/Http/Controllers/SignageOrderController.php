@@ -100,8 +100,9 @@ class SignageOrderController extends Controller
         return view('projects.signage.show', compact('signageOrder'));
     }
 
-    public function approveDesign($locale, SignageOrder $signageOrder)
+    public function approveDesign($locale = 'ar', $signageOrder = null)
     {
+        $signageOrder = ($signageOrder instanceof SignageOrder) ? $signageOrder : SignageOrder::findOrFail($signageOrder);
         $this->authorize('manage-signage');
 
         $signageOrder->update([

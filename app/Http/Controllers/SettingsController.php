@@ -110,7 +110,7 @@ class SettingsController extends Controller
         $this->settingsService->set('doc_prefix_quotation', $validated['doc_prefix_quotation'], 'financial', 'string');
         $this->settingsService->set('doc_prefix_invoice', $validated['doc_prefix_invoice'], 'financial', 'string');
         $this->settingsService->set('doc_prefix_work_order', $validated['doc_prefix_work_order'], 'financial', 'string');
-        $this->settingsService->set('allow_negative_inventory', $request->boolean('allow_negative_inventory') ? '1' : '0', 'financial', 'boolean');
+        $this->settingsService->set('allow_negative_inventory', '0', 'financial', 'boolean');
         $this->settingsService->set('allow_delivery_with_balance', $request->boolean('allow_delivery_with_balance') ? '1' : '0', 'financial', 'boolean');
         $this->settingsService->set('min_downpayment_percentage', $validated['min_downpayment_percentage'], 'financial', 'float');
 

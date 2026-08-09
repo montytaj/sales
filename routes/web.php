@@ -21,6 +21,8 @@ use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\WorkOrderController;
 use Illuminate\Support\Facades\Route;
 
 // Redirect unlocalized root / and /login to default Arabic locale /ar/login
@@ -87,13 +89,24 @@ Route::group([
         Route::resource('suppliers', SupplierController::class);
         Route::post('suppliers/{supplier}/attachments', [SupplierController::class, 'uploadAttachment'])->name('suppliers.upload-attachment');
 
+        // Services Catalog Routes
+        Route::resource('services', \App\Http\Controllers\ServiceController::class);
+
+        // Signage Orders Routes
+        Route::resource('signage-orders', \App\Http\Controllers\SignageOrderController::class);
+        Route::post('signage-orders/{signageOrder}/approve-design', [\App\Http\Controllers\SignageOrderController::class, 'approveDesign'])->name('signage-orders.approve-design');
+
+        // Site Surveys Routes
+        Route::resource('surveys', \App\Http\Controllers\SiteSurveyController::class);
+
         // Lookups & Master Data Routes
         Route::resource('units', UnitController::class);
         Route::resource('categories', ItemCategoryController::class);
         Route::resource('warehouses', WarehouseController::class);
 
-        // Inventory Items Routes (Multi-Units)
+        // Inventory Items & Movements Routes
         Route::resource('inventory', InventoryItemController::class);
+        Route::post('inventory/scraps', [\App\Http\Controllers\InventoryController::class, 'storeScrap'])->name('inventory.scraps.store');
 
         // Quotations Routes
         Route::resource('quotations', QuotationController::class);
@@ -113,10 +126,12 @@ Route::group([
         Route::patch('invoices/{invoice}/update-status', [InvoiceController::class, 'updateStatus'])->name('invoices.update-status');
         Route::get('invoices/{invoice}/print', [InvoiceController::class, 'print'])->name('invoices.print');
 
-        // Purchases Routes
+        // Purchases & Purchase Orders Routes
         Route::get('purchases', [PurchaseController::class, 'index'])->name('purchases.index');
         Route::get('purchases/create-invoice', [PurchaseController::class, 'createInvoice'])->name('purchases.create_invoice');
         Route::post('purchases/store-invoice', [PurchaseController::class, 'storeInvoice'])->name('purchases.store_invoice');
+        Route::post('purchases/store-po', [PurchaseController::class, 'storePo'])->name('purchases.store_po');
+        Route::post('purchases/orders/{po}/receive-goods', [PurchaseController::class, 'receiveGoods'])->name('purchases.receive_goods');
         Route::get('purchases/{invoice}/show-invoice', [PurchaseController::class, 'showInvoice'])->name('purchases.show_invoice');
 
         // Cashboxes Routes
@@ -138,6 +153,21 @@ Route::group([
         Route::get('accounting', [AccountController::class, 'index'])->name('accounting.index');
         Route::resource('accounting', AccountController::class)->except(['index']);
 
+        // Projects, Contracts & Work Orders Routes
+        Route::resource('contracts', \App\Http\Controllers\ContractController::class);
+        Route::post('contracts/{contract}/approve', [\App\Http\Controllers\ContractController::class, 'approve'])->name('contracts.approve');
+        Route::post('contracts/{contract}/convert-to-project', [\App\Http\Controllers\ContractController::class, 'convertToProject'])->name('contracts.convert-to-project');
+
+        Route::resource('projects', ProjectController::class);
+        Route::resource('work-orders', WorkOrderController::class);
+        Route::post('work-orders/{workOrder}/authorize-start', [WorkOrderController::class, 'authorizeStart'])->name('work-orders.authorize-start');
+        Route::post('work-orders/{workOrder}/override-start', [WorkOrderController::class, 'overrideStart'])->name('work-orders.override-start');
+        Route::post('work-orders/{workOrder}/deliver', [WorkOrderController::class, 'deliver'])->name('work-orders.deliver');
+
+        // Workshop Kiosk Routes
+        Route::get('workshop-kiosk', [\App\Http\Controllers\WorkshopKioskController::class, 'index'])->name('workshop-kiosk.index');
+        Route::post('workshop-kiosk/{workOrder}/action', [\App\Http\Controllers\WorkshopKioskController::class, 'action'])->name('workshop-kiosk.action');
+
         // Notifications & Reports
         Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
         Route::get('notifications/{notification}/read', [NotificationController::class, 'markAsRead'])->name('notifications.mark-read');
@@ -148,6 +178,8 @@ Route::group([
         Route::get('reports/customer-statement', [ReportController::class, 'customerStatement'])->name('reports.customer-statement');
         Route::get('reports/supplier-statement', [ReportController::class, 'supplierStatement'])->name('reports.supplier-statement');
         Route::get('reports/sales', [ReportController::class, 'sales'])->name('reports.sales');
+        Route::get('reports/workshop', [ReportController::class, 'workshop'])->name('reports.workshop');
+        Route::get('reports/projects', [ReportController::class, 'projects'])->name('reports.projects');
         Route::get('reports/financial', [ReportController::class, 'financial'])->name('reports.financial');
         Route::get('reports/inventory', [ReportController::class, 'inventory'])->name('reports.inventory');
         Route::get('activity-logs', [\App\Http\Controllers\ActivityLogController::class, 'index'])->name('activity-logs.index');

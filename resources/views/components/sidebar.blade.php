@@ -1,11 +1,11 @@
 <aside id="sidebar" class="bg-dark text-white border-end flex-shrink-0 transition-all p-2 pt-0 d-flex flex-column align-self-stretch" style="min-height: 100%; height: auto; position: relative; z-index: 1020; padding-top: 0 !important;">
-    <div class="sidebar-sticky-wrapper d-flex flex-column flex-grow-1 sticky-top overflow-y-auto custom-scrollbar" style="top: var(--header-height, 64px); height: calc(100vh - var(--header-height, 64px)); overscroll-behavior: contain;">
+    <div class="sidebar-sticky-wrapper d-flex flex-column flex-grow-1 sticky-top overflow-y-auto custom-scrollbar" style="top: var(--header-height, 70px); height: calc(100vh - var(--header-height, 70px)); overscroll-behavior: contain; overscroll-behavior-y: contain;">
         <!-- Sidebar Header -->
-        <div class="sidebar-header pb-1 mb-1 border-bottom border-slate-800 text-center px-1 flex-shrink-0" style="padding-top: 0; margin-top: 0;">
+        <div class="sidebar-header pt-3 pb-2 mb-1 border-bottom border-slate-800 text-center px-2 flex-shrink-0">
             <div class="d-flex flex-column align-items-center justify-content-start gap-0.5 overflow-hidden w-100">
                 @php $sysLogo = setting('logo'); @endphp
                 @if($sysLogo && \Illuminate\Support\Facades\Storage::disk('public')->exists($sysLogo))
-                    <img src="{{ asset('storage/' . $sysLogo) }}" alt="Logo" class="img-fluid object-contain sidebar-text transition-all w-100" style="max-height: 100px; width: 100%; max-width: 100%; object-fit: contain;">
+                    <img src="{{ asset('storage/' . $sysLogo) }}" alt="Logo" class="img-fluid object-contain sidebar-text transition-all w-100 mt-1" style="max-height: 90px; width: 100%; max-width: 100%; object-fit: contain;">
                 @else
                     <div class="rounded-circle bg-primary-subtle p-2 mb-1 d-inline-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
                         <i class="bi bi-shop-window text-primary fs-2"></i>
@@ -384,8 +384,8 @@
         </ul>
     </div>
 
-    <!-- Sidebar Footer with User Dropdown at Absolute Bottom -->
-    <div class="sidebar-footer border-top border-slate-800 pt-2.5 pb-3 mt-auto px-1 flex-shrink-0">
+    <!-- Sidebar Footer with User Dropdown at End of List -->
+    <div class="sidebar-footer border-top border-slate-800 pt-3 pb-4 mt-3 px-1">
         @auth
             <div class="dropup">
                 <button class="btn btn-dark border-0 w-100 p-2 rounded-3 d-flex align-items-center justify-content-between gap-2 hover-bg-slate-800 transition-all text-start" 

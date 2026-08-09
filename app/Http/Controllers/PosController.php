@@ -18,14 +18,25 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+
 class PosController extends Controller
 {
+    use AuthorizesRequests;
+
     public function index($locale = 'ar')
     {
-        $categories = ItemCategory::where('is_active', true)->get();
+        $this->authorize('view-invoices');
+        $categories = ItemCategory::where('is_active', true)
+            ->withCount(['items' => function ($q) {
+                $q->where('is_active', true);
+            }])
+            ->get();
+
         $items = InventoryItem::with(['category', 'baseUnit', 'wholesaleUnit', 'warehouseItems'])
             ->where('is_active', true)
             ->get();
+
         $customers = Customer::where('is_active', true)->get();
         $warehouses = Warehouse::where('is_active', true)->get();
         $cashboxes = Cashbox::where('is_active', true)->get();
@@ -35,6 +46,8 @@ class PosController extends Controller
 
     public function store($locale = 'ar', Request $request)
     {
+        $this->authorize('create-invoices');
+
         $request->validate([
             'customer_id' => 'nullable|exists:customers,id',
             'warehouse_id' => 'required|exists:warehouses,id',
@@ -62,6 +75,38 @@ class PosController extends Controller
 
             // Invoice number generator
             $invoiceNumber = 'POS-' . date('Ymd') . '-' . strtoupper(substr(uniqid(), -4));
+
+            // 1. Stock availability validation for all items
+            $itemBaseQtyTotals = [];
+            foreach ($request->input('items') as $rawItem) {
+                $invItem = InventoryItem::findOrFail($rawItem['id']);
+                $qty = (float)$rawItem['qty'];
+                $unitType = $rawItem['unit_type'];
+
+                $qtyInBase = ($unitType === 'wholesale' && $invItem->conversion_factor > 0)
+                    ? ($qty * (float)$invItem->conversion_factor)
+                    : $qty;
+
+                $itemBaseQtyTotals[$invItem->id] = ($itemBaseQtyTotals[$invItem->id] ?? 0) + $qtyInBase;
+            }
+
+            foreach ($itemBaseQtyTotals as $itemId => $totalRequiredBase) {
+                $invItem = InventoryItem::find($itemId);
+                $whItem = DB::table('warehouse_items')
+                    ->where('warehouse_id', $warehouseId)
+                    ->where('inventory_item_id', $itemId)
+                    ->first();
+
+                $availableStock = $whItem ? max(0, (float)$whItem->qty_in_base_units) : 0;
+
+                if ($totalRequiredBase > $availableStock) {
+                    $unitName = $invItem->baseUnit?->name ?? 'قطعة';
+                    return response()->json([
+                        'success' => false,
+                        'message' => "عفواً، الكمية المطلوبة من الصنف ({$invItem->name}) بـ {$totalRequiredBase} {$unitName} غير متوفرة. الرصيد المتاح حالياً بالمخزن: {$availableStock} {$unitName}.",
+                    ], 422);
+                }
+            }
 
             $subtotal = 0;
             $itemsData = [];
@@ -141,21 +186,22 @@ class PosController extends Controller
                     'created_by' => $user->id,
                 ]);
 
-                // Deduct warehouse item stock
+                // Deduct warehouse item stock safely
                 $whItem = DB::table('warehouse_items')
                     ->where('warehouse_id', $warehouseId)
                     ->where('inventory_item_id', $item->id)
                     ->first();
 
                 if ($whItem) {
+                    $newQty = max(0, (float)$whItem->qty_in_base_units - $data['qty_in_base']);
                     DB::table('warehouse_items')
                         ->where('id', $whItem->id)
-                        ->decrement('qty_in_base_units', $data['qty_in_base']);
+                        ->update(['qty_in_base_units' => $newQty, 'updated_at' => now()]);
                 } else {
                     DB::table('warehouse_items')->insert([
                         'warehouse_id' => $warehouseId,
                         'inventory_item_id' => $item->id,
-                        'qty_in_base_units' => -$data['qty_in_base'],
+                        'qty_in_base_units' => 0,
                         'created_at' => now(),
                         'updated_at' => now(),
                     ]);

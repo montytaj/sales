@@ -97,7 +97,7 @@
             </div>
 
             <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
+                <table class="table table-hover align-middle datatable mb-0">
                     <thead class="bg-slate-100 border-bottom border-slate-200">
                         <tr>
                             <th scope="col" class="ps-3 text-slate-600 font-semibold fs-7">التاريخ</th>

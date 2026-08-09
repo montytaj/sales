@@ -141,8 +141,9 @@ class ContractController extends Controller
         return view('projects.contracts.show', compact('contract'));
     }
 
-    public function approve($locale, Contract $contract)
+    public function approve($locale = 'ar', $contract = null)
     {
+        $contract = ($contract instanceof Contract) ? $contract : Contract::findOrFail($contract);
         $this->authorize('approve-contracts');
 
         $contract->update([
@@ -161,8 +162,9 @@ class ContractController extends Controller
         return back()->with('success', 'تم اعتماد العقد رسمياً.');
     }
 
-    public function convertToProject(Request $request, $locale, Contract $contract)
+    public function convertToProject(Request $request, $locale = 'ar', $contract = null)
     {
+        $contract = ($contract instanceof Contract) ? $contract : Contract::findOrFail($contract);
         $this->authorize('create-projects');
 
         if ($contract->project) {

@@ -13,6 +13,10 @@ class InventoryItemController extends Controller
 {
     public function index($locale = 'ar')
     {
+        if (!setting('inventory_enabled', true)) {
+            return redirect()->route('dashboard', ['locale' => $locale])->with('error', 'وحدة المخزون معطلة حالياً في إعدادات النظام.');
+        }
+
         $items = InventoryItem::with(['category', 'baseUnit', 'wholesaleUnit', 'warehouseItems.warehouse'])
             ->latest()
             ->get();

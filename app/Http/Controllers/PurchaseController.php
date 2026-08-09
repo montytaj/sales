@@ -62,7 +62,8 @@ class PurchaseController extends Controller
 
         DB::beginTransaction();
         try {
-            $invoiceNumber = 'PINV-' . date('Ymd') . '-' . str_pad(PurchaseInvoice::count() + 1, 4, '0', STR_PAD_LEFT);
+            $maxId = (int) DB::table('purchase_invoices')->max('id');
+            $invoiceNumber = 'PINV-' . date('Ymd') . '-' . str_pad($maxId + 1, 4, '0', STR_PAD_LEFT);
             $subtotal = 0;
             $totalTax = 0;
 
@@ -192,5 +193,66 @@ class PurchaseController extends Controller
         $invoice->load(['supplier', 'warehouse', 'items.item.baseUnit', 'items.item.wholesaleUnit', 'items.unit', 'creator']);
 
         return view('purchases.show_invoice', compact('invoice'));
+    }
+
+    public function storePo(Request $request, $locale = 'ar')
+    {
+        $this->authorize('create-purchases');
+
+        $validated = $request->validate([
+            'supplier_id' => 'required|exists:suppliers,id',
+            'total_amount' => 'required|numeric|min:0',
+            'tax_amount' => 'nullable|numeric|min:0',
+            'order_date' => 'required|date',
+            'notes' => 'nullable|string',
+        ]);
+
+        $total = (float) $validated['total_amount'];
+        $tax = (float) ($validated['tax_amount'] ?? 0);
+        $net = $total + $tax;
+
+        $po = PurchaseOrder::create([
+            'po_number' => PurchaseOrder::generatePoNumber(),
+            'supplier_id' => $validated['supplier_id'],
+            'total_amount' => $total,
+            'tax_amount' => $tax,
+            'net_amount' => $net,
+            'status' => 'issued',
+            'order_date' => $validated['order_date'],
+            'notes' => $validated['notes'] ?? null,
+            'created_by' => auth()->id(),
+        ]);
+
+        ActivityLog::log('purchase_order_created', $po, "Created purchase order {$po->po_number}");
+
+        return redirect()->route('purchases.index')->with('success', 'تم إنشاء أمر الشراء بنجاح.');
+    }
+
+    public function receiveGoods(Request $request, $locale = 'ar', $id = null)
+    {
+        $this->authorize('manage-purchases');
+
+        $po = ($id instanceof PurchaseOrder) ? $id : PurchaseOrder::findOrFail($id);
+
+        $validated = $request->validate([
+            'warehouse_id' => 'required|exists:warehouses,id',
+            'receipt_date' => 'required|date',
+            'notes' => 'nullable|string',
+        ]);
+
+        $grn = \App\Models\GoodsReceipt::create([
+            'receipt_number' => \App\Models\GoodsReceipt::generateReceiptNumber(),
+            'purchase_order_id' => $po->id,
+            'warehouse_id' => $validated['warehouse_id'],
+            'receipt_date' => $validated['receipt_date'],
+            'notes' => $validated['notes'] ?? null,
+            'created_by' => auth()->id(),
+        ]);
+
+        $po->update(['status' => 'received']);
+
+        ActivityLog::log('goods_received', $grn, "Received goods for PO {$po->po_number}");
+
+        return redirect()->route('purchases.index')->with('success', 'تم تسجيل استلام البضائع بنجاح.');
     }
 }
