@@ -31,9 +31,11 @@
             'unpaid' => 'غير مسدد',
             'draft' => 'مسودة'
         ]">
-        <div class="col-12 col-md-3">
-            <label for="customer_id" class="form-label font-semibold fs-7 text-slate-700">العميل</label>
-            <select name="customer_id" id="customer_id" class="form-select fs-7">
+        <div class="col-12 col-md-5">
+            <label for="customer_id" class="form-label font-semibold fs-7 text-slate-700 mb-1">
+                <i class="bi bi-person me-1 text-primary"></i> العميل
+            </label>
+            <select name="customer_id" id="customer_id" class="form-select fs-7 py-2 rounded-3 border-slate-300">
                 <option value="">-- جميع العملاء --</option>
                 @foreach ($customers as $c)
                     <option value="{{ $c->id }}" {{ (string)request('customer_id') === (string)$c->id ? 'selected' : '' }}>
@@ -44,42 +46,34 @@
         </div>
     </x-report-filter-bar>
 
-    <!-- KPI Summary Row -->
-    <div class="row g-3 mb-4">
-        <div class="col-12 col-sm-6 col-xl-3">
+    <!-- KPI Summary Row (3 Elements with col-12 col-md-4 spanning full 100% width) -->
+    <div class="row g-3 mb-4 justify-content-center align-items-stretch">
+        <div class="col-12 col-md-4">
             <x-kpi-card 
-                title="إجمالي الفواتير" 
-                :value="number_format($total_invoices)" 
-                icon="bi-receipt" 
-                color="primary" 
-                subtitle="عدد المستندات الصادرة" />
-        </div>
-        <div class="col-12 col-sm-6 col-xl-3">
-            <x-kpi-card 
-                title="صافي المبيعات" 
-                :value="number_format($total_net, 2)" 
+                title="تحصيل نقدي (كاش)" 
+                :value="number_format($total_cash, 2)" 
                 :currency="setting('currency', 'SAR')" 
-                icon="bi-graph-up-arrow" 
+                icon="bi-cash-stack" 
                 color="emerald" 
-                subtitle="قبل الخصم والمستحق" />
+                subtitle="مستلم بالخزائن" />
         </div>
-        <div class="col-12 col-sm-6 col-xl-3">
+        <div class="col-12 col-md-4">
             <x-kpi-card 
-                title="ضريبة القيمة المضافة" 
-                :value="number_format($total_tax, 2)" 
+                title="تحصيل بنكي / شبكة" 
+                :value="number_format($total_bank, 2)" 
                 :currency="setting('currency', 'SAR')" 
-                icon="bi-percent" 
+                icon="bi-bank" 
                 color="info" 
-                subtitle="الضريبة المستحقة" />
+                subtitle="مستلم بالبنوك" />
         </div>
-        <div class="col-12 col-sm-6 col-xl-3">
+        <div class="col-12 col-md-4">
             <x-kpi-card 
-                title="المبالغ المتبقية" 
-                :value="number_format($total_remaining, 2)" 
+                title="المبالغ الآجلة (المتبقية)" 
+                :value="number_format($total_due, 2)" 
                 :currency="setting('currency', 'SAR')" 
                 icon="bi-exclamation-circle" 
                 color="warning" 
-                subtitle="غير مسددة" />
+                subtitle="مستحقة على العملاء" />
         </div>
     </div>
 
@@ -165,27 +159,48 @@
                     <tr>
                         <th scope="col" class="ps-3 text-slate-600 font-semibold fs-7">رقم الفاتورة</th>
                         <th scope="col" class="text-slate-600 font-semibold fs-7">العميل</th>
-                        <th scope="col" class="text-slate-600 font-semibold fs-7">الفرع</th>
-                        <th scope="col" class="text-slate-600 font-semibold fs-7 text-end">قبل الضريبة</th>
-                        <th scope="col" class="text-slate-600 font-semibold fs-7 text-end">الضريبة</th>
-                        <th scope="col" class="text-slate-600 font-semibold fs-7 text-end">الصافي</th>
-                        <th scope="col" class="text-slate-600 font-semibold fs-7 text-end">المدفوع</th>
+                        <th scope="col" class="text-slate-600 font-semibold fs-7 text-end">إجمالي الفاتورة</th>
+                        <th scope="col" class="text-slate-600 font-semibold fs-7 text-end">كاش</th>
+                        <th scope="col" class="text-slate-600 font-semibold fs-7 text-end">بنك / شبكة</th>
+                        <th scope="col" class="text-slate-600 font-semibold fs-7 text-end">آجل (متبقي)</th>
+                        <th scope="col" class="text-slate-600 font-semibold fs-7">طريقة الدفع والحسابات</th>
                         <th scope="col" class="text-slate-600 font-semibold fs-7">الحالة</th>
                         <th scope="col" class="text-slate-600 font-semibold fs-7 pe-3">التاريخ</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 fs-7">
                     @forelse ($invoices as $inv)
+                        @php
+                            $cAmt = $inv->payment_type === 'cash' ? ($inv->cash_amount > 0 ? $inv->cash_amount : $inv->total_amount) : ($inv->payment_type === 'split' ? $inv->cash_amount : 0);
+                            $bAmt = $inv->payment_type === 'bank' ? ($inv->bank_amount > 0 ? $inv->bank_amount : $inv->total_amount) : ($inv->payment_type === 'split' ? $inv->bank_amount : 0);
+                            $dAmt = $inv->payment_type === 'credit' ? ($inv->due_amount > 0 ? $inv->due_amount : $inv->total_amount) : ($inv->payment_type === 'split' ? $inv->due_amount : 0);
+                        @endphp
                         <tr>
                             <td class="ps-3 font-mono font-bold text-slate-900">
                                 <a href="{{ route('invoices.show', $inv) }}" class="text-decoration-none hover-primary">{{ $inv->invoice_number }}</a>
                             </td>
                             <td class="font-semibold text-slate-800">{{ $inv->customer?->name }}</td>
-                            <td class="text-slate-600">{{ $inv->branch?->name }}</td>
-                            <td class="text-end font-mono text-slate-700 dir-ltr">{{ number_format($inv->subtotal, 2) }}</td>
-                            <td class="text-end font-mono text-slate-700 dir-ltr">{{ number_format($inv->tax_amount, 2) }}</td>
-                            <td class="text-end font-mono font-bold text-slate-900 dir-ltr">{{ number_format($inv->net_amount, 2) }}</td>
-                            <td class="text-end font-mono text-success font-semibold dir-ltr">{{ number_format($inv->paid_amount, 2) }}</td>
+                            <td class="text-end font-mono font-bold text-slate-900 dir-ltr">{{ number_format($inv->total_amount, 2) }}</td>
+                            <td class="text-end font-mono text-success font-semibold dir-ltr">{{ number_format($cAmt, 2) }}</td>
+                            <td class="text-end font-mono text-primary font-semibold dir-ltr">{{ number_format($bAmt, 2) }}</td>
+                            <td class="text-end font-mono text-danger font-semibold dir-ltr">{{ number_format($dAmt, 2) }}</td>
+                            <td>
+                                @if($inv->payment_type === 'split')
+                                    <span class="badge bg-info-subtle text-info border">مختلط (كاش + بنك + أجل)</span>
+                                @elseif($inv->payment_type === 'cash')
+                                    <span class="badge bg-success-subtle text-success border">كاش</span>
+                                @elseif($inv->payment_type === 'bank')
+                                    <span class="badge bg-primary-subtle text-primary border">بنك</span>
+                                @else
+                                    <span class="badge bg-warning-subtle text-warning border">آجل</span>
+                                @endif
+                                @if($inv->cashAccount)
+                                    <small class="d-block text-muted font-mono"><i class="bi bi-wallet2 me-1"></i>{{ $inv->cashAccount->name }}</small>
+                                @endif
+                                @if($inv->bankAccount)
+                                    <small class="d-block text-muted font-mono"><i class="bi bi-bank me-1"></i>{{ $inv->bankAccount->name }}</small>
+                                @endif
+                            </td>
                             <td>
                                 <x-status-badge :status="$inv->status" />
                             </td>

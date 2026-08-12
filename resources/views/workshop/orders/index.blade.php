@@ -69,9 +69,9 @@
                         <tr>
                             <th scope="col" class="ps-3">{{ __('workshop.work_order_number') }}</th>
                             <th scope="col">{{ __('customers.name') }}</th>
-                            <th scope="col">مواصفات CNC</th>
+                            <th scope="col">المواصفات</th>
                             <th scope="col">{{ __('workshop.priority') }}</th>
-                            <th scope="col">تصريح البدء</th>
+                            <th scope="col">التصريح</th>
                             <th scope="col">الحالة</th>
                             <th scope="col" class="text-end pe-3">الإجراءات</th>
                         </tr>
@@ -103,10 +103,12 @@
                                         {{ __('workshop.statuses.' . $order->status) }}
                                     </span>
                                 </td>
-                                <td class="text-end pe-3">
-                                    <a href="{{ route('work-orders.show', $order) }}" class="btn btn-sm btn-outline-secondary">
-                                        <i class="bi bi-eye me-1"></i>عرض التفاصيل
-                                    </a>
+                                <td class="text-end pe-3 text-nowrap">
+                                    <div class="d-inline-flex align-items-center justify-content-end gap-1">
+                                        <a href="{{ route('work-orders.show', $order) }}" class="btn btn-action-icon btn-action-show" title="عرض التفاصيل">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                    </div>
                                 </td>
                             </tr>
                         @empty

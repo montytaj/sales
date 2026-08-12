@@ -24,11 +24,32 @@ class ReportController extends Controller
     }
 
     /**
+     * Check permission before viewing any report
+     */
+    protected function checkReportPermission(string $permission, string $fallbackPermission = 'reports.access'): void
+    {
+        $user = Auth::user();
+        if (!$user) {
+            abort(401);
+        }
+
+        if ($user->hasRole('system-admin') || $user->hasRole('general-manager')) {
+            return;
+        }
+
+        if ($user->can($permission) || $user->can($fallbackPermission) || $user->can('reports.financial.view') || $user->can('reports.financial_statements.view')) {
+            return;
+        }
+
+        abort(403, 'عفواً، لا تملك الصلاحية المحاسبية اللازمة للوصول إلى هذا التقرير.');
+    }
+
+    /**
      * Reports Hub Index
      */
     public function index()
     {
-
+        $this->checkReportPermission('reports.access');
         $branches = Branch::where('is_active', true)->get();
         return view('reports.index', compact('branches'));
     }
@@ -165,21 +186,27 @@ class ReportController extends Controller
 
         if ($request->input('export') === 'csv') {
 
-            $headers = ['رقم الفاتورة', 'العميل', 'الإجمالي قبل الضريبة', 'الضريبة', 'الصافي', 'المدفوع', 'المتبقي', 'الحالة', 'التاريخ'];
+            $headers = ['رقم الفاتورة', 'العميل', 'إجمالي الفاتورة', 'المدفوع كاش', 'حساب الكاش', 'المدفوع بنك/شبكة', 'حساب البنك', 'المتبقي (آجل)', 'طريقة الدفع', 'الحالة', 'التاريخ'];
 
             return $this->exportCsv(
-                $salesData['raw_query']->get(),
+                $salesData['raw_query']->with(['customer', 'cashAccount', 'bankAccount'])->get(),
                 'sales_report.csv',
                 $headers,
                 function ($invoice) {
+                    $cAmt = $invoice->payment_type === 'cash' ? ($invoice->cash_amount > 0 ? $invoice->cash_amount : $invoice->total_amount) : ($invoice->payment_type === 'split' ? $invoice->cash_amount : 0);
+                    $bAmt = $invoice->payment_type === 'bank' ? ($invoice->bank_amount > 0 ? $invoice->bank_amount : $invoice->total_amount) : ($invoice->payment_type === 'split' ? $invoice->bank_amount : 0);
+                    $dAmt = $invoice->payment_type === 'credit' ? ($invoice->due_amount > 0 ? $invoice->due_amount : $invoice->total_amount) : ($invoice->payment_type === 'split' ? $invoice->due_amount : 0);
+
                     return [
                         $invoice->invoice_number,
                         $invoice->customer?->name ?? '-',
-                        number_format((float) $invoice->subtotal, 2, '.', ''),
-                        number_format((float) $invoice->tax_amount, 2, '.', ''),
                         number_format((float) $invoice->total_amount, 2, '.', ''),
-                        number_format((float) $invoice->paid_amount, 2, '.', ''),
-                        number_format((float) ($invoice->total_amount - $invoice->paid_amount), 2, '.', ''),
+                        number_format((float) $cAmt, 2, '.', ''),
+                        $invoice->cashAccount?->name ?? '-',
+                        number_format((float) $bAmt, 2, '.', ''),
+                        $invoice->bankAccount?->name ?? '-',
+                        number_format((float) $dAmt, 2, '.', ''),
+                        $invoice->payment_type,
                         $invoice->status,
                         $invoice->created_at?->format('Y-m-d H:i') ?? '-',
                     ];
@@ -370,8 +397,399 @@ class ReportController extends Controller
     }
 
     /**
+     * Warehouse Inventory Audit Report (تقرير جرد المخزن)
+     */
+    public function warehouseInventory(Request $request)
+    {
+        $filters = $request->only(['warehouse_id', 'from_date', 'to_date', 'category_id', 'search']);
+        $reportData = $this->reportService->getWarehouseInventoryReport($filters);
+
+        if ($request->input('export') === 'csv') {
+            $headers = ['اسم الصنف', 'التصنيف', 'الوحدة', 'الرصيد الافتتاحي', 'الوارد', 'المنصرف', 'الرصيد المتاح (الصافي)', 'سعر التكلفة (ر.س)', 'إجمالي التقييم (ر.س)'];
+
+            return $this->exportCsv(
+                $reportData['raw_items'],
+                'warehouse_inventory_report.csv',
+                $headers,
+                function ($item) {
+                    return [
+                        $item['name'],
+                        $item['category_name'],
+                        $item['unit_name'],
+                        number_format($item['opening_qty'], 2, '.', ''),
+                        number_format($item['in_qty'], 2, '.', ''),
+                        number_format($item['out_qty'], 2, '.', ''),
+                        number_format($item['available_qty'], 2, '.', ''),
+                        number_format($item['unit_cost'], 2, '.', ''),
+                        number_format($item['total_valuation'], 2, '.', ''),
+                    ];
+                }
+            );
+        }
+
+        if ($request->input('export') === 'print') {
+            $whName = $reportData['selected_warehouse']?->name ?? 'جميع المخازن';
+            return view('reports.print', [
+                'title' => 'تقرير جرد المخزن - ' . $whName,
+                'subtitle' => 'فترة التقرير: من ' . ($reportData['from_date'] ?? 'بداية النظام') . ' إلى ' . ($reportData['to_date'] ?? 'الآن'),
+                'data' => $reportData['raw_items'],
+                'columns' => [
+                    'name' => 'اسم الصنف',
+                    'category_name' => 'التصنيف',
+                    'unit_name' => 'الوحدة',
+                    'opening_qty' => 'الافتتاحي',
+                    'in_qty' => 'الوارد',
+                    'out_qty' => 'المنصرف',
+                    'available_qty' => 'الرصيد المتاح',
+                    'unit_cost' => 'التكلفة',
+                    'total_valuation' => 'إجمالي التقييم',
+                ],
+                'summary' => [
+                    'المخزن' => $whName,
+                    'إجمالي الأصناف' => $reportData['total_items_count'],
+                    'إجمالي الكمية المتوفرة' => number_format($reportData['total_stock_qty'], 2),
+                    'إجمالي قيمة المخزون' => number_format($reportData['total_valuation'], 2) . ' ر.س',
+                ]
+            ]);
+        }
+
+        return view('reports.warehouse-inventory', $reportData);
+    }
+
+    /**
+     * Financial Period Comparison Report (شاشة مقارنة الفترات المالية)
+     */
+    public function financialComparison(Request $request)
+    {
+        $branches = Branch::where('is_active', true)->get();
+        $filters = $request->only(['p1_from', 'p1_to', 'p2_from', 'p2_to', 'branch_id']);
+        $comparisonData = $this->reportService->getFinancialComparisonData($filters);
+
+        if ($request->input('export') === 'csv') {
+            $headers = ['المؤشر المالي', 'الفترة الأولى', 'الفترة الثانية', 'الفارق', 'نسبة التغير %'];
+            $rows = collect($comparisonData['metrics'])->map(function ($m) {
+                return [
+                    'indicator' => $m['title'],
+                    'p1' => number_format($m['p1'], 2, '.', ''),
+                    'p2' => number_format($m['p2'], 2, '.', ''),
+                    'diff' => number_format($m['variance']['diff'], 2, '.', ''),
+                    'percentage' => ($m['variance']['percentage'] >= 0 ? '+' : '') . $m['variance']['percentage'] . '%',
+                ];
+            });
+
+            return $this->exportCsv(
+                $rows,
+                'financial_comparison_report.csv',
+                $headers,
+                function ($row) {
+                    return [
+                        $row['indicator'],
+                        $row['p1'],
+                        $row['p2'],
+                        $row['diff'],
+                        $row['percentage'],
+                    ];
+                }
+            );
+        }
+
+        if ($request->input('export') === 'print') {
+            return view('reports.print', [
+                'title' => 'تقرير مقارنة الفترات المالية',
+                'subtitle' => "الفترة الأولى: {$comparisonData['p1_from']} إلى {$comparisonData['p1_to']} | الفترة الثانية: {$comparisonData['p2_from']} إلى {$comparisonData['p2_to']}",
+                'data' => collect($comparisonData['metrics']),
+                'columns' => [
+                    'title' => 'المؤشر المالي',
+                    'p1' => 'الفترة الأولى',
+                    'p2' => 'الفترة الثانية',
+                ],
+                'summary' => [
+                    'الفارق في المبيعات' => number_format($comparisonData['metrics']['sales']['variance']['diff'], 2) . ' ر.س',
+                    'الفارق في صافي الربح' => number_format($comparisonData['metrics']['net_profit']['variance']['diff'], 2) . ' ر.س',
+                ]
+            ]);
+        }
+
+        return view('reports.financial_comparison', array_merge($comparisonData, compact('branches')));
+    }
+
+    /**
+     * Most Profitable Items Report (تقرير الأصناف الأكثر ربحية)
+     */
+    public function profitableItems(Request $request)
+    {
+        $branches = Branch::where('is_active', true)->get();
+        $categories = \App\Models\ItemCategory::all();
+        $warehouses = \App\Models\Warehouse::all();
+
+        $filters = $request->only(['from_date', 'to_date', 'category_id', 'warehouse_id', 'branch_id', 'sort_by']);
+        $reportData = $this->reportService->getProfitableItemsReport($filters);
+
+        if ($request->input('export') === 'csv') {
+            $headers = ['كود الصنف', 'اسم الصنف', 'التصنيف', 'الكمية المباعة', 'متوسط سعر البيع', 'التكلفة الفردية', 'إجمالي الإيراد', 'إجمالي التكلفة', 'ربح الصنف', 'هامش الربح %'];
+
+            return $this->exportCsv(
+                $reportData['items'],
+                'profitable_items_report.csv',
+                $headers,
+                function ($item) {
+                    return [
+                        $item['item_code'],
+                        $item['item_name'],
+                        $item['category'],
+                        number_format($item['sold_qty'], 2, '.', ''),
+                        number_format($item['avg_selling_price'], 2, '.', ''),
+                        number_format($item['cost_price'], 2, '.', ''),
+                        number_format($item['total_revenue'], 2, '.', ''),
+                        number_format($item['total_cost'], 2, '.', ''),
+                        number_format($item['profit'], 2, '.', ''),
+                        number_format($item['profit_margin'], 2, '.', '') . '%',
+                    ];
+                }
+            );
+        }
+
+        if ($request->input('export') === 'print') {
+            return view('reports.print', [
+                'title' => 'تقرير الأصناف الأكثر ربحية',
+                'subtitle' => 'تاريخ التقرير: ' . date('Y-m-d H:i'),
+                'data' => $reportData['items'],
+                'columns' => [
+                    'item_code' => 'الكود',
+                    'item_name' => 'اسم الصنف',
+                    'category' => 'التصنيف',
+                    'sold_qty' => 'الكمية المباعة',
+                    'total_revenue' => 'إجمالي الإيراد',
+                    'total_cost' => 'إجمالي التكلفة',
+                    'profit' => 'صافي الربح',
+                ],
+                'summary' => [
+                    'إجمالي عدد الأصناف' => $reportData['total_items_count'],
+                    'إجمالي الأرباح' => number_format($reportData['total_profit'], 2) . ' ر.س',
+                    'متوسط هامش الربح' => $reportData['avg_profit_margin'] . '%',
+                ]
+            ]);
+        }
+
+        return view('reports.profitable_items', array_merge($reportData, compact('branches', 'categories', 'warehouses')));
+    }
+
+    /**
+     * Balance Sheet / Statement of Financial Position (قائمة المركز المالي / الميزانية العمومية)
+     */
+    public function balanceSheet(Request $request)
+    {
+        $this->checkReportPermission('reports.balance_sheet.view', 'reports.financial_statements.view');
+        $branches = Branch::where('is_active', true)->get();
+        $filters = $request->only(['as_of_date', 'branch_id']);
+        $reportData = $this->reportService->getBalanceSheetReport($filters);
+
+        if ($request->input('export') === 'csv') {
+            $headers = ['القسم', 'البند / الحساب', 'المبلغ (ر.س)'];
+            $rows = collect();
+
+            foreach ($reportData['current_assets'] as $item) {
+                $rows->push(['cat' => 'أولاً: الأصول المتداولة', 'name' => $item['name'], 'amount' => number_format($item['amount'], 2, '.', '')]);
+            }
+            $rows->push(['cat' => 'إجمالي الأصول المتداولة', 'name' => 'إجمالي الأصول المتداولة', 'amount' => number_format($reportData['total_current_assets'], 2, '.', '')]);
+
+            foreach ($reportData['fixed_assets'] as $item) {
+                $rows->push(['cat' => 'ثانياً: الأصول غير المتداولة', 'name' => $item['name'], 'amount' => number_format($item['amount'], 2, '.', '')]);
+            }
+            $rows->push(['cat' => 'صافي الأصول الثابتة', 'name' => 'صافي الأصول الثابتة', 'amount' => number_format($reportData['net_fixed_assets'], 2, '.', '')]);
+            $rows->push(['cat' => 'إجمالي الأصول', 'name' => 'إجمالي الأصول النهائي', 'amount' => number_format($reportData['total_assets'], 2, '.', '')]);
+
+            foreach ($reportData['current_liabilities'] as $item) {
+                $rows->push(['cat' => 'أولاً: الخصوم المتداولة', 'name' => $item['name'], 'amount' => number_format($item['amount'], 2, '.', '')]);
+            }
+            $rows->push(['cat' => 'إجمالي الخصوم المتداولة', 'name' => 'إجمالي الخصوم المتداولة', 'amount' => number_format($reportData['total_current_liabilities'], 2, '.', '')]);
+
+            foreach ($reportData['long_term_liabilities'] as $item) {
+                $rows->push(['cat' => 'ثانياً: الخصوم طويلة الأجل', 'name' => $item['name'], 'amount' => number_format($item['amount'], 2, '.', '')]);
+            }
+            $rows->push(['cat' => 'إجمالي الخصوم', 'name' => 'إجمالي الخصوم بالكامل', 'amount' => number_format($reportData['total_liabilities'], 2, '.', '')]);
+
+            foreach ($reportData['equity_items'] as $item) {
+                $rows->push(['cat' => 'ثالثاً: حقوق الملكية', 'name' => $item['name'], 'amount' => number_format($item['amount'], 2, '.', '')]);
+            }
+            $rows->push(['cat' => 'إجمالي حقوق الملكية', 'name' => 'إجمالي حقوق الملكية', 'amount' => number_format($reportData['total_equity'], 2, '.', '')]);
+            $rows->push(['cat' => 'إجمالي الخصوم وحقوق الملكية', 'name' => 'إجمالي الخصوم وحقوق الملكية النهائي', 'amount' => number_format($reportData['total_liabilities_and_equity'], 2, '.', '')]);
+
+            return $this->exportCsv(
+                $rows,
+                "balance_sheet_{$reportData['as_of_date']}.csv",
+                $headers,
+                fn($row) => [$row['cat'], $row['name'], $row['amount']]
+            );
+        }
+
+        if ($request->input('export') === 'print') {
+            return view('reports.print', [
+                'title' => 'قائمة المركز المالي (الميزانية العمومية)',
+                'subtitle' => "بتاريخ: {$reportData['as_of_date']}",
+                'data' => collect(array_merge($reportData['current_assets'], $reportData['fixed_assets'], $reportData['current_liabilities'], $reportData['equity_items'])),
+                'columns' => ['name' => 'البيان', 'amount' => 'المبلغ'],
+                'summary' => [
+                    'إجمالي الأصول' => number_format($reportData['total_assets'], 2) . ' ر.س',
+                    'إجمالي الخصوم' => number_format($reportData['total_liabilities'], 2) . ' ر.س',
+                    'إجمالي حقوق الملكية' => number_format($reportData['total_equity'], 2) . ' ر.س',
+                    'إجمالي الخصوم وحقوق الملكية' => number_format($reportData['total_liabilities_and_equity'], 2) . ' ر.س',
+                ]
+            ]);
+        }
+
+        return view('reports.balance-sheet', array_merge($reportData, compact('branches')));
+    }
+
+    /**
+     * Income Statement (قائمة الدخل / الأرباح والخسائر)
+     */
+    public function incomeStatement(Request $request)
+    {
+        $this->checkReportPermission('reports.income_statement.view', 'reports.financial_statements.view');
+        $branches = Branch::where('is_active', true)->get();
+        $filters = $request->only(['from_date', 'to_date', 'branch_id']);
+        $reportData = $this->reportService->getIncomeStatementReport($filters);
+
+        if ($request->input('export') === 'csv') {
+            $headers = ['البيان', 'المبلغ (ر.س)'];
+            $rows = [
+                ['name' => 'المبيعات الإجمالية', 'amount' => number_format($reportData['gross_sales'], 2, '.', '')],
+                ['name' => '(-) مردودات ومسموحات المبيعات', 'amount' => '(' . number_format($reportData['sales_returns'], 2, '.', '') . ')'],
+                ['name' => 'صافي المبيعات', 'amount' => number_format($reportData['net_sales'], 2, '.', '')],
+                ['name' => '(-) تكلفة البضاعة المباعة (COGS)', 'amount' => '(' . number_format($reportData['cogs'], 2, '.', '') . ')'],
+                ['name' => 'مجمل الربح', 'amount' => number_format($reportData['gross_profit'], 2, '.', '')],
+            ];
+
+            foreach ($reportData['operating_expenses'] as $exp) {
+                $rows[] = ['name' => $exp['name'], 'amount' => '(' . number_format($exp['amount'], 2, '.', '') . ')'];
+            }
+            $rows[] = ['name' => 'إجمالي المصروفات التشغيلية', 'amount' => '(' . number_format($reportData['total_operating_expenses'], 2, '.', '') . ')'];
+            $rows[] = ['name' => 'الربح التشغيلي', 'amount' => number_format($reportData['operating_profit'], 2, '.', '')];
+            $rows[] = ['name' => '(+) إيرادات أخرى', 'amount' => number_format($reportData['other_income'], 2, '.', '')];
+            $rows[] = ['name' => '(-) مصروف فوائد', 'amount' => '(' . number_format($reportData['interest_expense'], 2, '.', '') . ')'];
+            $rows[] = ['name' => 'صافي الربح قبل الضريبة', 'amount' => number_format($reportData['profit_before_tax'], 2, '.', '')];
+            $rows[] = ['name' => '(-) ضريبة الدخل / القيمة المضافة', 'amount' => '(' . number_format($reportData['tax_amount'], 2, '.', '') . ')'];
+            $rows[] = ['name' => 'صافي الربح بعد الضريبة', 'amount' => number_format($reportData['net_profit_after_tax'], 2, '.', '')];
+
+            return $this->exportCsv(
+                collect($rows),
+                "income_statement_{$reportData['from_date']}_to_{$reportData['to_date']}.csv",
+                $headers,
+                fn($r) => [$r['name'], $r['amount']]
+            );
+        }
+
+        if ($request->input('export') === 'print') {
+            return view('reports.print', [
+                'title' => 'قائمة الدخل (الأرباح والخسائر)',
+                'subtitle' => "الفترة: من {$reportData['from_date']} إلى {$reportData['to_date']}",
+                'data' => collect([
+                    ['name' => 'صافي المبيعات', 'amount' => number_format($reportData['net_sales'], 2)],
+                    ['name' => 'تكلفة البضاعة المباعة', 'amount' => number_format($reportData['cogs'], 2)],
+                    ['name' => 'مجمل الربح', 'amount' => number_format($reportData['gross_profit'], 2)],
+                    ['name' => 'إجمالي المصروفات التشغيلية', 'amount' => number_format($reportData['total_operating_expenses'], 2)],
+                    ['name' => 'الربح التشغيلي', 'amount' => number_format($reportData['operating_profit'], 2)],
+                    ['name' => 'صافي الربح بعد الضريبة', 'amount' => number_format($reportData['net_profit_after_tax'], 2)],
+                ]),
+                'columns' => ['name' => 'البيان', 'amount' => 'المبلغ (ر.س)'],
+                'summary' => [
+                    'هامش صافي الربح' => $reportData['profit_margin'] . '%',
+                    'صافي الربح النهائي' => number_format($reportData['net_profit_after_tax'], 2) . ' ر.س',
+                ]
+            ]);
+        }
+
+        return view('reports.income-statement', array_merge($reportData, compact('branches')));
+    }
+
+    /**
+     * Trial Balance (ميزان المراجعة)
+     */
+    public function trialBalance(Request $request)
+    {
+        $this->checkReportPermission('reports.trial_balance.view', 'reports.financial_statements.view');
+        $branches = Branch::where('is_active', true)->get();
+        $filters = $request->only(['from_date', 'to_date', 'level']);
+        $reportData = $this->reportService->getTrialBalanceReport($filters);
+
+        if ($request->input('export') === 'csv') {
+            $headers = ['رمز الحساب', 'اسم الحساب', 'المستوى', 'مدين افتتاحي', 'دائن افتتاحي', 'حركة مدين', 'حركة دائن', 'رصيد مدين', 'رصيد دائن'];
+            return $this->exportCsv(
+                collect($reportData['rows']),
+                "trial_balance_{$reportData['from_date']}_to_{$reportData['to_date']}.csv",
+                $headers,
+                fn($r) => [
+                    $r['code'], $r['name'], $r['level'],
+                    number_format($r['opening_debit'], 2, '.', ''),
+                    number_format($r['opening_credit'], 2, '.', ''),
+                    number_format($r['period_debit'], 2, '.', ''),
+                    number_format($r['period_credit'], 2, '.', ''),
+                    number_format($r['ending_debit'], 2, '.', ''),
+                    number_format($r['ending_credit'], 2, '.', '')
+                ]
+            );
+        }
+
+        return view('reports.trial-balance', array_merge($reportData, compact('branches')));
+    }
+
+    /**
+     * Statement of Cash Flows (قائمة التدفقات النقدية)
+     */
+    public function cashFlow(Request $request)
+    {
+        $this->checkReportPermission('reports.cash_flow.view', 'reports.financial_statements.view');
+        $branches = Branch::where('is_active', true)->get();
+        $filters = $request->only(['from_date', 'to_date', 'branch_id']);
+        $reportData = $this->reportService->getCashFlowReport($filters);
+
+        return view('reports.cash-flow', array_merge($reportData, compact('branches')));
+    }
+
+    /**
+     * Statement of Changes in Equity (قائمة التغيرات في حقوق الملكية)
+     */
+    public function equityChanges(Request $request)
+    {
+        $this->checkReportPermission('reports.equity_changes.view', 'reports.financial_statements.view');
+        $branches = Branch::where('is_active', true)->get();
+        $filters = $request->only(['from_date', 'to_date', 'branch_id']);
+        $reportData = $this->reportService->getEquityChangesReport($filters);
+
+        return view('reports.equity-changes', array_merge($reportData, compact('branches')));
+    }
+
+    /**
+     * General Ledger Report (دفتر الأستاذ العام)
+     */
+    public function generalLedger(Request $request)
+    {
+        $this->checkReportPermission('reports.general_ledger.view', 'reports.financial_statements.view');
+        $branches = Branch::where('is_active', true)->get();
+        $filters = $request->only(['account_id', 'from_date', 'to_date']);
+        $reportData = $this->reportService->getGeneralLedgerReport($filters);
+
+        return view('reports.general-ledger', array_merge($reportData, compact('branches')));
+    }
+
+    /**
+     * Account Balances Tree Report (كشف أرصدة الحسابات)
+     */
+    public function accountBalances(Request $request)
+    {
+        $this->checkReportPermission('reports.account_balances.view', 'reports.financial_statements.view');
+        $branches = Branch::where('is_active', true)->get();
+        $filters = $request->only(['as_of_date']);
+        $reportData = $this->reportService->getAccountBalancesReport($filters);
+
+        return view('reports.account-balances', array_merge($reportData, compact('branches')));
+    }
+
+    /**
      * Ledger CSV Export Utility with BOM and Running Balance.
      */
+
     protected function exportLedgerCsv(\Illuminate\Support\Collection $ledger, string $filename, string $entityName, float $openingBalance, float $endingBalance)
 
     {

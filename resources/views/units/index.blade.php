@@ -17,9 +17,9 @@
                     <thead class="table-light">
                         <tr>
                             <th>#</th>
-                            <th>اسم الوحدة</th>
-                            <th>الرمز / الاختصار</th>
-                            <th>عدد الأصناف المرتبطة</th>
+                            <th>الوحدة</th>
+                            <th>الرمز</th>
+                            <th>الأصناف</th>
                             <th>الحالة</th>
                             <th>الإجراءات</th>
                         </tr>
@@ -42,19 +42,22 @@
                                         <span class="badge bg-danger-subtle text-danger">معطل</span>
                                     @endif
                                 </td>
-                                <td>
-                                    <button class="btn btn-sm btn-outline-primary me-1" 
-                                            data-bs-toggle="modal" 
-                                            data-bs-target="#editUnitModal{{ $unit->id }}">
-                                        <i class="bi bi-pencil"></i> تعديل
-                                    </button>
-                                    <form action="{{ route('units.destroy', $unit) }}" method="POST" class="d-inline" onsubmit="return confirm('هل أنت تأكد من الحذف؟')">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button class="btn btn-sm btn-outline-danger" {{ ($unit->base_items_count + $unit->wholesale_items_count) > 0 ? 'disabled' : '' }}>
-                                            <i class="bi bi-trash"></i> حذف
-                                        </button>
-                                    </form>
+                                 <td class="text-nowrap">
+                                     <div class="d-inline-flex align-items-center gap-1">
+                                         <button type="button" class="btn btn-action-icon btn-action-edit" 
+                                                 data-bs-toggle="modal" 
+                                                 data-bs-target="#editUnitModal{{ $unit->id }}"
+                                                 title="تعديل">
+                                             <i class="bi bi-pencil"></i>
+                                         </button>
+                                         <form action="{{ route('units.destroy', $unit) }}" method="POST" class="d-inline" onsubmit="return confirm('هل أنت تأكد من الحذف؟')">
+                                             @csrf
+                                             @method('DELETE')
+                                             <button type="submit" class="btn btn-action-icon btn-action-delete" title="حذف" {{ ($unit->base_items_count + $unit->wholesale_items_count) > 0 ? 'disabled' : '' }}>
+                                                 <i class="bi bi-trash"></i>
+                                             </button>
+                                         </form>
+                                     </div>
 
                                     <!-- Modal Edit Unit -->
                                     <div class="modal fade" id="editUnitModal{{ $unit->id }}" tabindex="-1">

@@ -37,6 +37,7 @@ class DashboardController extends Controller
                     'customer' => ['name' => $inv->customer?->name ?? 'عميل نقدي'],
                     'total_amount' => (float) $inv->total_amount,
                     'status' => $inv->status ?? 'pending',
+                    'date' => $inv->invoice_date ? $inv->invoice_date->format('Y-m-d') : ($inv->created_at ? $inv->created_at->format('Y-m-d') : '-'),
                 ];
             })->toArray();
 

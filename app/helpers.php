@@ -31,6 +31,19 @@ if (!function_exists('setting')) {
     }
 }
 
+if (!function_exists('currency')) {
+    /**
+     * Helper to get system base currency.
+     *
+     * @param int|null $branchId
+     * @return string
+     */
+    function currency(?int $branchId = null): string
+    {
+        return (string) setting('currency', app()->getLocale() == 'ar' ? 'ر.س' : 'SAR', $branchId);
+    }
+}
+
 if (!function_exists('feature_enabled')) {
     /**
      * Helper to check if a feature flag is enabled.

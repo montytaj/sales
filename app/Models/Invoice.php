@@ -22,6 +22,12 @@ class Invoice extends Model
         'status',
         'issue_date',
         'due_date',
+        'payment_type',
+        'cash_amount',
+        'bank_amount',
+        'due_amount',
+        'cash_account_id',
+        'bank_account_id',
         'subtotal',
         'discount_amount',
         'tax_amount',
@@ -33,6 +39,9 @@ class Invoice extends Model
     protected $casts = [
         'issue_date' => 'date',
         'due_date' => 'date',
+        'cash_amount' => 'float',
+        'bank_amount' => 'float',
+        'due_amount' => 'float',
         'subtotal' => 'float',
         'discount_amount' => 'float',
         'tax_amount' => 'float',
@@ -42,6 +51,16 @@ class Invoice extends Model
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);
+    }
+
+    public function cashAccount(): BelongsTo
+    {
+        return $this->belongsTo(Account::class, 'cash_account_id');
+    }
+
+    public function bankAccount(): BelongsTo
+    {
+        return $this->belongsTo(Account::class, 'bank_account_id');
     }
 
     public function warehouse(): BelongsTo

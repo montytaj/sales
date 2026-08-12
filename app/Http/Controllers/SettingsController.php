@@ -56,6 +56,7 @@ class SettingsController extends Controller
             'currency' => ['required', 'string', 'max:10'],
             'timezone' => ['required', 'string', 'max:100'],
             'default_locale' => ['required', 'string', 'in:ar,en'],
+            'system_start_date' => ['nullable', 'date'],
             'sales_system_mode' => ['nullable', 'string', 'in:standard,pos'],
 
             // Financial
@@ -74,6 +75,7 @@ class SettingsController extends Controller
             'cheques_enabled' => ['boolean'],
             'projects_enabled' => ['boolean'],
             'signage_enabled' => ['boolean'],
+            'quick_actions_enabled' => ['boolean'],
         ]);
 
         // General Settings & Branding
@@ -86,6 +88,7 @@ class SettingsController extends Controller
         $this->settingsService->set('currency', $validated['currency'], 'general', 'string');
         $this->settingsService->set('timezone', $validated['timezone'], 'general', 'string');
         $this->settingsService->set('default_locale', $validated['default_locale'], 'general', 'string');
+        $this->settingsService->set('system_start_date', $validated['system_start_date'] ?? date('Y-m-d'), 'general', 'string');
         $this->settingsService->set('sales_system_mode', $validated['sales_system_mode'] ?? 'standard', 'general', 'string');
 
         // Logo Upload & Delete logic
@@ -120,6 +123,7 @@ class SettingsController extends Controller
         $this->settingsService->set('cheques_enabled', $request->boolean('cheques_enabled') ? '1' : '0', 'feature_flags', 'boolean');
         $this->settingsService->set('projects_enabled', $request->boolean('projects_enabled') ? '1' : '0', 'feature_flags', 'boolean');
         $this->settingsService->set('signage_enabled', $request->boolean('signage_enabled') ? '1' : '0', 'feature_flags', 'boolean');
+        $this->settingsService->set('quick_actions_enabled', $request->boolean('quick_actions_enabled') ? '1' : '0', 'feature_flags', 'boolean');
 
         ActivityLog::log(
             'settings_updated',
@@ -128,5 +132,62 @@ class SettingsController extends Controller
         );
 
         return back()->with('success', __('settings.settings_saved_successfully'));
+    }
+
+    /**
+     * Generate & Download Full Database Backup (.sql)
+     */
+    public function downloadBackup()
+    {
+        $this->authorize('manage-settings');
+
+        $tables = \DB::select('SHOW TABLES');
+        $dbName = config('database.connections.mysql.database');
+        $keyName = "Tables_in_" . $dbName;
+
+        $sql = "-- ==============================================\n";
+        $sql .= "-- Workshop ERP Database Backup\n";
+        $sql .= "-- Date: " . date('Y-m-d H:i:s') . "\n";
+        $sql .= "-- Database: " . $dbName . "\n";
+        $sql .= "-- ==============================================\n\n";
+        $sql .= "SET FOREIGN_KEY_CHECKS=0;\n\n";
+
+        foreach ($tables as $tableObj) {
+            $tableName = $tableObj->{$keyName} ?? current((array) $tableObj);
+            if (!$tableName) continue;
+
+            $createStmt = \DB::select("SHOW CREATE TABLE `{$tableName}`");
+            if (!empty($createStmt)) {
+                $sql .= "-- Table structure for `{$tableName}`\n";
+                $sql .= "DROP TABLE IF EXISTS `{$tableName}`;\n";
+                $sql .= $createStmt[0]->{'Create Table'} . ";\n\n";
+
+                $rows = \DB::table($tableName)->get();
+                if ($rows->count() > 0) {
+                    $sql .= "-- Data dumping for `{$tableName}`\n";
+                    foreach ($rows as $row) {
+                        $rowArray = (array) $row;
+                        $columns = array_keys($rowArray);
+                        $escapedValues = array_map(function ($val) {
+                            if (is_null($val)) return 'NULL';
+                            return "'" . addslashes((string) $val) . "'";
+                        }, array_values($rowArray));
+
+                        $sql .= "INSERT INTO `{$tableName}` (`" . implode("`, `", $columns) . "`) VALUES (" . implode(", ", $escapedValues) . ");\n";
+                    }
+                    $sql .= "\n";
+                }
+            }
+        }
+
+        $sql .= "SET FOREIGN_KEY_CHECKS=1;\n";
+
+        $fileName = "database_backup_" . date('Y_m_d_His') . ".sql";
+
+        ActivityLog::log('database_backup_downloaded', null, "تم تحميل نسخة احتياطية كاملة من قاعدة البيانات باسم {$fileName}");
+
+        return response($sql)
+            ->header('Content-Type', 'application/sql; charset=UTF-8')
+            ->header('Content-Disposition', "attachment; filename=\"{$fileName}\"");
     }
 }

@@ -17,6 +17,7 @@ class PaymentVoucher extends Model
         'customer_id',
         'supplier_id',
         'invoice_id',
+        'purchase_invoice_id',
         'cashbox_id',
         'target_cashbox_id',
         'amount',
@@ -44,6 +45,11 @@ class PaymentVoucher extends Model
     public function invoice(): BelongsTo
     {
         return $this->belongsTo(Invoice::class);
+    }
+
+    public function purchaseInvoice(): BelongsTo
+    {
+        return $this->belongsTo(PurchaseInvoice::class, 'purchase_invoice_id');
     }
 
     public function cashbox(): BelongsTo

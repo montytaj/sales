@@ -5,7 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>{{ config('app.name', 'Workshop ERP') }} - {{ View::hasSection('title') ? View::getSection('title') : ($title ?? __('general.dashboard')) }}</title>
+    @php
+        $pageTitle = View::hasSection('title') 
+            ? View::getSection('title') 
+            : (!empty($title) ? $title : (isset($headerTitle) ? $headerTitle : null));
+
+        if (empty($pageTitle)) {
+            $pageTitle = app()->getLocale() === 'ar' ? 'لوحة التحكم' : 'Dashboard';
+        }
+    @endphp
+    <title>{{ $pageTitle }}</title>
 
     <!-- Bootstrap 5.3 CSS (RTL / LTR) -->
     @if(app()->getLocale() == 'ar')
@@ -20,8 +29,49 @@
     <!-- DataTables Bootstrap 5 CSS -->
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
 
+    <!-- Select2 CSS & Bootstrap 5 Theme -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css">
+
     <!-- App Design System Styles / Vite -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+
+    <!-- Dark Mode Theme Script -->
+    <script>
+        (function() {
+            if (localStorage.getItem('costs_theme') === 'dark') {
+                document.documentElement.setAttribute('data-bs-theme', 'dark');
+            }
+        })();
+
+        function applyDarkModePreference() {
+            const isDark = localStorage.getItem('costs_theme') === 'dark';
+            const htmlEl = document.documentElement;
+            const bodyEl = document.body;
+            const iconEl = document.getElementById('darkModeIcon');
+
+            if (isDark) {
+                htmlEl.setAttribute('data-bs-theme', 'dark');
+                if (bodyEl) bodyEl.classList.add('dark-mode');
+                if (iconEl) iconEl.className = 'bi bi-sun-fill fs-5 text-warning';
+            } else {
+                htmlEl.setAttribute('data-bs-theme', 'light');
+                if (bodyEl) bodyEl.classList.remove('dark-mode');
+                if (iconEl) iconEl.className = 'bi bi-moon-stars fs-5 text-slate-700';
+            }
+        }
+
+        function toggleDarkMode() {
+            if (localStorage.getItem('costs_theme') === 'dark') {
+                localStorage.setItem('costs_theme', 'light');
+            } else {
+                localStorage.setItem('costs_theme', 'dark');
+            }
+            applyDarkModePreference();
+        }
+
+        document.addEventListener('DOMContentLoaded', applyDarkModePreference);
+    </script>
 
     @php
         $primaryColor = setting('primary_color', '#2563eb');
@@ -79,7 +129,7 @@
         }
         #sidebar .sidebar-nav-link.active i,
         #sidebar .sidebar-sub-link.active i {
-            color: #ffffff !important;
+            color: #60a5fa !important;
         }
         .btn-primary, .btn-primary-custom {
             background-color: var(--primary-color) !important;
@@ -111,16 +161,26 @@
             background-color: rgba({{ $accentRgb }}, 0.15) !important;
             color: var(--accent-color) !important;
         }
-        [dir="rtl"] .sidebar-nav-link.active {
-            border-right: 4px solid var(--primary-color) !important;
+        #sidebar .sidebar-nav-link.active i,
+        #sidebar .sidebar-sub-link.active i {
+            color: var(--primary-color, #60a5fa) !important;
         }
-        [dir="ltr"] .sidebar-nav-link.active {
-            border-left: 4px solid var(--primary-color) !important;
+        [dir="rtl"] .sidebar-nav-link.active,
+        [dir="rtl"] .sidebar-sub-link.active {
+            border-right: 3px solid var(--primary-color) !important;
+            border-left: none !important;
         }
+        [dir="ltr"] .sidebar-nav-link.active,
+        [dir="ltr"] .sidebar-sub-link.active {
+            border-left: 3px solid var(--primary-color) !important;
+            border-right: none !important;
+        }
+        .sidebar-nav-link.active,
         .sidebar-sub-link.active {
             color: #ffffff !important;
-            background-color: var(--primary-color) !important;
+            background-color: rgba(255, 255, 255, 0.08) !important;
             font-weight: 600 !important;
+            box-shadow: none !important;
         }
         .nav-pills .nav-link.active, .page-item.active .page-link, .form-check-input:checked {
             background-color: var(--primary-color) !important;
@@ -207,6 +267,38 @@
             transform: translateY(-4px);
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04) !important;
         }
+
+        /* Align table headers with data cells (start / right in Arabic) */
+        .table th:not(.text-center):not(.text-end),
+        .table thead th:not(.text-center):not(.text-end),
+        table.dataTable thead th:not(.text-center):not(.text-end) {
+            text-align: start !important;
+        }
+
+        /* Select2 Custom Polish */
+        .select2-container--bootstrap-5 .select2-selection {
+            font-family: inherit;
+            font-size: 0.875rem;
+            min-height: 38px;
+            border-color: #cbd5e1;
+            border-radius: 0.375rem;
+        }
+        .select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered {
+            color: #1e293b;
+            line-height: 2.2;
+        }
+        .select2-container--bootstrap-5 .select2-dropdown {
+            border-color: #cbd5e1;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            z-index: 1060 !important;
+        }
+        .select2-container--bootstrap-5 .select2-search__field {
+            font-size: 0.875rem;
+            border-radius: 0.25rem;
+        }
+        .select2-container--bootstrap-5 .select2-results__option--highlighted[aria-selected] {
+            background-color: var(--color-primary, #2563eb);
+        }
     </style>
 </head>
 <body class="d-flex flex-column min-vh-100 bg-body">
@@ -230,12 +322,12 @@
                 @if (isset($header))
                     @php
                         $isRtl = app()->getLocale() == 'ar';
-                        $circlePosition = $isRtl ? 'left: -15px;' : 'right: -15px;';
+                        $circlePosition = $isRtl ? 'left: -10px;' : 'right: -10px;';
                     @endphp
-                    <div class="page-header-card card border-0 shadow-sm rounded-4 p-3.5 p-md-4 mb-4 position-relative" style="z-index: 10;">
+                    <div class="page-header-card card border-0 shadow-sm rounded-3 px-3 px-md-4 py-2.5 py-md-2.5 mb-3 position-relative" style="z-index: 10;">
                         <!-- Compact Semi-circle Backdrop Shape in Corner with Emerald Accent Gradient -->
                         <div style="position: absolute; inset: 0; overflow: hidden; border-radius: inherit; pointer-events: none; z-index: 0;">
-                            <div style="position: absolute; top: -15px; {{ $circlePosition }} width: 85px; height: 85px; border-radius: 50%; background: linear-gradient(135deg, rgba(16, 185, 129, 0.18), rgba(59, 130, 246, 0.12)); pointer-events: none;"></div>
+                            <div style="position: absolute; top: -10px; {{ $circlePosition }} width: 65px; height: 65px; border-radius: 50%; background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(59, 130, 246, 0.10)); pointer-events: none;"></div>
                         </div>
 
                         <div class="position-relative" style="z-index: 2;">
@@ -261,10 +353,11 @@
     <!-- Bootstrap 5.3 Bundle JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
-    <!-- jQuery & DataTables JS -->
+    <!-- jQuery, DataTables & Select2 JS -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
     <!-- Global Web Audio API Sound Synthesizer & Toast Alert Engine -->
     <script>
@@ -376,37 +469,109 @@
 
         document.addEventListener('DOMContentLoaded', function () {
             const sidebar = document.getElementById('sidebar');
-            const sidebarToggle = document.getElementById('sidebarToggle');
             const STORAGE_KEY = 'costs_sidebar_collapsed';
 
-            // Restore collapsed state from Local Storage
-            const isCollapsed = localStorage.getItem(STORAGE_KEY) === 'true';
-            if (isCollapsed && sidebar && window.innerWidth >= 992) {
-                sidebar.classList.add('sidebar-collapsed');
-                document.body.classList.add('sidebar-collapsed');
+            // Create Backdrop Overlay for Mobile Drawer
+            let backdrop = document.querySelector('.sidebar-backdrop');
+            if (!backdrop) {
+                backdrop = document.createElement('div');
+                backdrop.className = 'sidebar-backdrop';
+                document.body.appendChild(backdrop);
             }
 
-            // Toggle Sidebar click handler
-            if (sidebarToggle && sidebar) {
-                sidebarToggle.addEventListener('click', function () {
-                    if (window.innerWidth < 992) {
-                        // Mobile Offcanvas Drawer toggle
-                        sidebar.classList.toggle('show-mobile');
+            function openMobileSidebar() {
+                if (!sidebar) return;
+                sidebar.classList.remove('sidebar-collapsed');
+                document.body.classList.remove('sidebar-collapsed');
+                sidebar.classList.add('show-mobile');
+                backdrop.classList.add('show');
+                document.body.style.overflow = 'hidden';
+            }
+
+            function closeMobileSidebar() {
+                if (!sidebar) return;
+                sidebar.classList.remove('show-mobile');
+                backdrop.classList.remove('show');
+                document.body.style.overflow = '';
+            }
+
+            function toggleSidebar() {
+                if (!sidebar) return;
+                if (window.innerWidth < 992) {
+                    if (sidebar.classList.contains('show-mobile')) {
+                        closeMobileSidebar();
                     } else {
-                        // Desktop Collapsed mode toggle
-                        sidebar.classList.toggle('sidebar-collapsed');
-                        document.body.classList.toggle('sidebar-collapsed');
-                        const collapsedNow = sidebar.classList.contains('sidebar-collapsed');
-                        localStorage.setItem(STORAGE_KEY, collapsedNow ? 'true' : 'false');
+                        openMobileSidebar();
+                    }
+                } else {
+                    sidebar.classList.toggle('sidebar-collapsed');
+                    document.body.classList.toggle('sidebar-collapsed');
+                    const collapsedNow = sidebar.classList.contains('sidebar-collapsed');
+                    localStorage.setItem(STORAGE_KEY, collapsedNow ? 'true' : 'false');
+                }
+            }
+
+            // Bind click handler to ALL toggle buttons across header and menus
+            document.querySelectorAll('#sidebarToggle, .sidebar-toggle-btn').forEach(btn => {
+                btn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    toggleSidebar();
+                });
+            });
+
+            // Close mobile sidebar on backdrop click or close button click
+            backdrop.addEventListener('click', closeMobileSidebar);
+
+            const closeBtn = document.getElementById('closeMobileSidebar');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', closeMobileSidebar);
+            }
+
+            // Initial State setup
+            if (window.innerWidth >= 992) {
+                const isCollapsed = localStorage.getItem(STORAGE_KEY) === 'true';
+                if (isCollapsed && sidebar) {
+                    sidebar.classList.add('sidebar-collapsed');
+                    document.body.classList.add('sidebar-collapsed');
+                }
+            } else if (sidebar) {
+                sidebar.classList.remove('sidebar-collapsed');
+                document.body.classList.remove('sidebar-collapsed');
+            }
+
+            // Handle window resize events
+            window.addEventListener('resize', function () {
+                if (window.innerWidth < 992) {
+                    if (sidebar) {
+                        sidebar.classList.remove('sidebar-collapsed');
+                        document.body.classList.remove('sidebar-collapsed');
+                    }
+                } else {
+                    closeMobileSidebar();
+                    const isCollapsed = localStorage.getItem(STORAGE_KEY) === 'true';
+                    if (isCollapsed && sidebar) {
+                        sidebar.classList.add('sidebar-collapsed');
+                        document.body.classList.add('sidebar-collapsed');
+                    }
+                }
+            });
+
+            // Desktop Auto Un-collapse: Expand sidebar if user clicks a menu group button while collapsed
+            if (sidebar) {
+                sidebar.addEventListener('click', function (e) {
+                    const groupBtn = e.target.closest('.sidebar-group-btn, .sidebar-nav-link');
+                    if (groupBtn && window.innerWidth >= 992 && sidebar.classList.contains('sidebar-collapsed')) {
+                        sidebar.classList.remove('sidebar-collapsed');
+                        document.body.classList.remove('sidebar-collapsed');
+                        localStorage.setItem(STORAGE_KEY, 'false');
                     }
                 });
             }
 
             // Isolated Independent Sidebar Wheel Scroll
-            const sidebarEl = document.getElementById('sidebar');
-            if (sidebarEl) {
-                sidebarEl.addEventListener('wheel', function(e) {
-                    const targetContainer = sidebarEl.querySelector('.sidebar-sticky-wrapper') || sidebarEl.querySelector('.sidebar-menu-wrapper') || sidebarEl;
+            if (sidebar) {
+                sidebar.addEventListener('wheel', function(e) {
+                    const targetContainer = sidebar.querySelector('.sidebar-sticky-wrapper') || sidebar.querySelector('.sidebar-menu-wrapper') || sidebar;
                     if (targetContainer) {
                         targetContainer.scrollTop += e.deltaY;
                     }
@@ -427,15 +592,16 @@
 
             // Initialize DataTables automatically on tables with .datatable class or standard data tables
             if (window.jQuery && $.fn.DataTable) {
+                $.fn.dataTable.ext.errMode = 'none';
                 const isAr = '{{ app()->getLocale() }}' === 'ar';
                 const arabicTranslation = {
                     "sProcessing": "جاري التحميل...",
-                    "sLengthMenu": "أظهر _MENU_ مدخلات",
-                    "sZeroRecords": "لم يتم العثور على أية سجلات",
-                    "sInfo": "إظهار _START_ إلى _END_ من أصل _TOTAL_ مدخل",
-                    "sInfoEmpty": "يعرض 0 إلى 0 من أصل 0 سجل",
-                    "sInfoFiltered": "(منتقاة من مجموع _MAX_ مُدخل)",
-                    "sSearch": "بحث سريع:",
+                    "sLengthMenu": "عرض _MENU_",
+                    "sZeroRecords": "لم يتم العثور على سجلات",
+                    "sInfo": "عرض _START_-_END_ من _TOTAL_",
+                    "sInfoEmpty": "عرض 0 من 0",
+                    "sInfoFiltered": "(من _MAX_)",
+                    "sSearch": "بحث:",
                     "oPaginate": {
                         "sFirst": "الأول",
                         "sPrevious": "السابق",
@@ -457,6 +623,39 @@
                     }
                 });
             }
+
+            // Initialize Select2 with internal search on all <select> elements globally
+            window.initSelect2 = function(container) {
+                if (!window.jQuery || !$.fn.select2) return;
+                const $scope = container ? $(container) : $(document.body);
+                const $selects = $scope.is('select') ? $scope : $scope.find('select');
+                $selects.filter(':not(.no-select2):not(.select2-hidden-accessible)').each(function() {
+                    const $select = $(this);
+                    if ($select.parents('.dataTables_length').length) return;
+
+                    const $modal = $select.closest('.modal');
+                    $select.select2({
+                        theme: 'bootstrap-5',
+                        dir: '{{ app()->getLocale() }}' === 'ar' ? 'rtl' : 'ltr',
+                        width: '100%',
+                        dropdownParent: $modal.length ? $modal : $(document.body),
+                        language: {
+                            noResults: function() {
+                                return '{{ app()->getLocale() }}' === 'ar' ? "لا توجد نتائج" : "No results found";
+                            },
+                            searching: function() {
+                                return '{{ app()->getLocale() }}' === 'ar' ? "جاري البحث..." : "Searching...";
+                            }
+                        }
+                    });
+                });
+            };
+
+            window.initSelect2();
+
+            $(document).on('shown.bs.modal', function(e) {
+                window.initSelect2(e.target);
+            });
         });
     </script>
 </body>

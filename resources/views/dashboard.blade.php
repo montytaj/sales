@@ -20,9 +20,9 @@
         </div>
     </x-slot>
 
-    <!-- Executive KPI Cards Grid (4 Top Highlights) -->
+    <!-- Executive KPI Cards Grid (Original ERP Metrics with Unified UX/UI) -->
     <div class="row g-3.5 mb-4">
-        <!-- Sales Total Card -->
+        <!-- 1. Total Sales Card -->
         <div class="col-12 col-sm-6 col-xl-3">
             <x-kpi-card 
                 :title="app()->getLocale() == 'ar' ? 'إجمالي المبيعات' : 'Total Sales'"
@@ -32,10 +32,11 @@
                 icon="bi-graph-up-arrow"
                 color="primary"
                 :url="route('invoices.index')"
-                actionText="عرض المبيعات" />
+                :actionText="app()->getLocale() == 'ar' ? 'عرض المبيعات ←' : 'View Sales ←'"
+                :infoTooltip="app()->getLocale() == 'ar' ? 'إجمالي قيمة فواتير المبيعات المحققة' : 'Total Sales Amount'" />
         </div>
 
-        <!-- Purchases Total Card -->
+        <!-- 2. Total Purchases Card -->
         <div class="col-12 col-sm-6 col-xl-3">
             <x-kpi-card 
                 :title="app()->getLocale() == 'ar' ? 'إجمالي المشتريات' : 'Total Purchases'"
@@ -43,12 +44,13 @@
                 :currency="setting('currency', 'SDG')"
                 :subtitle="$purchasesCount . ' ' . (app()->getLocale() == 'ar' ? 'أمر توريد' : 'Orders')"
                 icon="bi-cart-check-fill"
-                color="success"
+                color="emerald"
                 :url="route('purchases.index')"
-                actionText="عرض المشتريات" />
+                :actionText="app()->getLocale() == 'ar' ? 'عرض المشتريات ←' : 'View Purchases ←'"
+                :infoTooltip="app()->getLocale() == 'ar' ? 'إجمالي قيمة مشتريات وأوامر التوريد' : 'Total Purchases Amount'" />
         </div>
 
-        <!-- Warehouses & Stock Items Card -->
+        <!-- 3. Warehouses & Stock Items Card -->
         <div class="col-12 col-sm-6 col-xl-3">
             <x-kpi-card 
                 :title="app()->getLocale() == 'ar' ? 'المخازن والأصناف' : 'Warehouses & Stock'"
@@ -57,10 +59,11 @@
                 icon="bi-boxes"
                 color="info"
                 :url="route('inventory.index')"
-                actionText="عرض المخزون" />
+                :actionText="app()->getLocale() == 'ar' ? 'عرض المخزون ←' : 'View Stock ←'"
+                :infoTooltip="app()->getLocale() == 'ar' ? 'إجمالي الأصناف المتاحة بالمخازن النشطة' : 'Total Registered Stock Items'" />
         </div>
 
-        <!-- Customers & Suppliers Card -->
+        <!-- 4. Customers & Suppliers Card -->
         <div class="col-12 col-sm-6 col-xl-3">
             <x-kpi-card 
                 :title="app()->getLocale() == 'ar' ? 'العملاء والموردون' : 'Clients & Vendors'"
@@ -69,13 +72,17 @@
                 icon="bi-people-fill"
                 color="warning"
                 :url="route('customers.index')"
-                actionText="عرض العملاء" />
+                :actionText="app()->getLocale() == 'ar' ? 'عرض العملاء ←' : 'View Clients ←'"
+                :infoTooltip="app()->getLocale() == 'ar' ? 'إجمالي عدد العملاء والموردين النشطين' : 'Total Active Clients & Vendors'" />
         </div>
     </div>
 
 
+
+
+    @if(feature_enabled('quick_actions_enabled'))
     <!-- Quick Shortcuts Toolbar (Equal Grid & Height) -->
-    <div class="card border-0 shadow-sm rounded-4 p-3 mb-4 bg-white">
+    <div class="card border shadow-sm rounded-4 p-3 mb-4 bg-white" style="border: 1.5px solid rgba(var(--bs-secondary-rgb, 15, 23, 42), 0.14) !important;">
         <div class="d-flex align-items-center justify-content-between mb-3">
             <h6 class="font-bold text-slate-900 mb-0">
                 <i class="bi bi-lightning-charge-fill text-amber-500 me-1.5"></i>{{ app()->getLocale() == 'ar' ? 'اختصارات الإجراءات السريعة' : 'Quick Actions' }}
@@ -120,12 +127,13 @@
             </div>
         </div>
     </div>
+    @endif
 
     <!-- Visual Analytics & Charts Section -->
     <div class="row g-4 mb-4">
         <!-- 6-Month Sales vs Purchases Bar Chart -->
         <div class="col-12 col-lg-8">
-            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+            <div class="card border shadow-sm rounded-4 p-4 bg-white h-100" style="border: 1.5px solid rgba(var(--bs-secondary-rgb, 15, 23, 42), 0.14) !important;">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <div>
                         <h6 class="font-bold text-slate-900 mb-0">
@@ -142,7 +150,7 @@
 
         <!-- Doughnut Distribution Chart -->
         <div class="col-12 col-lg-4">
-            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+            <div class="card border shadow-sm rounded-4 p-4 bg-white h-100" style="border: 1.5px solid rgba(var(--bs-secondary-rgb, 15, 23, 42), 0.14) !important;">
                 <div class="mb-3">
                     <h6 class="font-bold text-slate-900 mb-0">
                         <i class="bi bi-pie-chart-fill text-success me-2"></i>{{ app()->getLocale() == 'ar' ? 'نسبة المبيعات إلى المشتريات' : 'Sales vs Purchases Ratio' }}
@@ -156,27 +164,27 @@
         </div>
     </div>
 
-    <!-- Dual Lists Row: Recent Invoices & Stock Alerts -->
-    <div class="row g-4">
-        <!-- Recent Sales Invoices Table -->
-        <div class="col-12 col-lg-6">
-            <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden h-100">
+    <!-- 1. Recent Sales Invoices Row (Full Width Row) -->
+    <div class="row g-4 mb-4">
+        <div class="col-12">
+            <div class="card border shadow-sm rounded-4 bg-white overflow-hidden" style="border: 1.5px solid rgba(var(--bs-secondary-rgb, 15, 23, 42), 0.14) !important;">
                 <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
                     <h6 class="font-bold text-slate-900 mb-0">
                         <i class="bi bi-clock-history text-primary me-2"></i>{{ app()->getLocale() == 'ar' ? 'أحدث فواتير المبيعات الصادرة' : 'Recent Sales Invoices' }}
                     </h6>
                     <a href="{{ route('invoices.index') }}" class="btn btn-sm btn-outline-primary rounded-pill px-3 fs-7 font-bold">
-                        {{ app()->getLocale() == 'ar' ? 'عرض الكل' : 'View All' }}
+                        {{ app()->getLocale() == 'ar' ? 'عرض كافة الفواتير' : 'View All Invoices' }}
                     </a>
                 </div>
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0">
                         <thead class="bg-light fs-7">
                             <tr>
-                                <th class="ps-3">{{ app()->getLocale() == 'ar' ? 'رقم الفاتورة' : 'Invoice #' }}</th>
-                                <th>{{ app()->getLocale() == 'ar' ? 'العميل' : 'Customer' }}</th>
-                                <th class="text-end">{{ app()->getLocale() == 'ar' ? 'الإجمالي' : 'Total' }}</th>
-                                <th class="pe-3 text-center">{{ app()->getLocale() == 'ar' ? 'الحالة' : 'Status' }}</th>
+                                <th class="ps-4" style="width: 18%;">{{ app()->getLocale() == 'ar' ? 'رقم الفاتورة' : 'Invoice #' }}</th>
+                                <th style="width: 32%;">{{ app()->getLocale() == 'ar' ? 'اسم العميل' : 'Customer Name' }}</th>
+                                <th style="width: 20%;">{{ app()->getLocale() == 'ar' ? 'تاريخ الفاتورة' : 'Invoice Date' }}</th>
+                                <th class="text-end" style="width: 18%;">{{ app()->getLocale() == 'ar' ? 'الإجمالي' : 'Total Amount' }}</th>
+                                <th class="pe-4 text-center" style="width: 12%;">{{ app()->getLocale() == 'ar' ? 'الحالة' : 'Status' }}</th>
                             </tr>
                         </thead>
                         <tbody class="fs-7">
@@ -189,20 +197,22 @@
                                     $totalAmount = $invObj?->total_amount ?? ($invArr['total_amount'] ?? 0);
                                     $statusVal = $invObj?->status ?? ($invArr['status'] ?? 'pending');
                                     $invId = $invObj?->id ?? ($invArr['id'] ?? (is_scalar($inv) ? $inv : 1));
+                                    $invDate = $invArr['date'] ?? ($invObj?->invoice_date ? $invObj->invoice_date->format('Y-m-d') : '-');
                                 @endphp
                                 <tr>
-                                    <td class="ps-3 font-mono font-bold">
+                                    <td class="ps-4 font-mono font-bold">
                                         <a href="{{ route('invoices.show', $invId) }}" class="text-decoration-none text-primary">{{ $invNumber }}</a>
                                     </td>
                                     <td class="font-medium text-slate-800">{{ $customerName }}</td>
+                                    <td class="font-mono text-muted">{{ $invDate }}</td>
                                     <td class="text-end font-mono font-bold text-slate-900">{{ number_format((float)$totalAmount, 2) }} {{ setting('currency', 'SDG') }}</td>
-                                    <td class="pe-3 text-center">
+                                    <td class="pe-4 text-center">
                                         <x-status-badge :status="$statusVal" />
                                     </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="4" class="text-center py-4 text-muted">{{ app()->getLocale() == 'ar' ? 'لا توجد فواتير مبيعات مسجلة مؤخراً' : 'No recent invoices.' }}</td>
+                                    <td colspan="5" class="text-center py-4 text-muted">{{ app()->getLocale() == 'ar' ? 'لا توجد فواتير مبيعات مسجلة مؤخراً' : 'No recent invoices.' }}</td>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -210,10 +220,12 @@
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- Inventory Stock Levels Card (Category Column Before Item Name & Expanded Width) -->
-        <div class="col-12 col-lg-6">
-            <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden h-100">
+    <!-- 2. Inventory Stock Levels Row (Full Width Row) -->
+    <div class="row g-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden">
                 <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
                     <h6 class="font-bold text-slate-900 mb-0">
                         <i class="bi bi-box-seam text-warning me-2"></i>{{ app()->getLocale() == 'ar' ? 'حالة المخزون والأصناف المتاحة' : 'Inventory Stock Overview' }}
@@ -226,10 +238,10 @@
                     <table class="table table-hover align-middle mb-0">
                         <thead class="bg-light fs-7">
                             <tr>
-                                <th class="ps-3" style="width: 18%;">{{ app()->getLocale() == 'ar' ? 'كود الصنف' : 'Code' }}</th>
-                                <th style="width: 25%;">{{ app()->getLocale() == 'ar' ? 'التصنيف' : 'Category' }}</th>
-                                <th style="width: 37%;">{{ app()->getLocale() == 'ar' ? 'اسم الصنف والمنتج' : 'Item & Product Name' }}</th>
-                                <th class="pe-3 text-end" style="width: 20%;">{{ app()->getLocale() == 'ar' ? 'الرصيد الكلي' : 'Stock' }}</th>
+                                <th class="ps-4" style="width: 15%;">{{ app()->getLocale() == 'ar' ? 'كود الصنف' : 'Code' }}</th>
+                                <th style="width: 20%;">{{ app()->getLocale() == 'ar' ? 'التصنيف' : 'Category' }}</th>
+                                <th style="width: 45%;">{{ app()->getLocale() == 'ar' ? 'اسم الصنف والمنتج' : 'Item & Product Name' }}</th>
+                                <th class="pe-4 text-end" style="width: 20%;">{{ app()->getLocale() == 'ar' ? 'الرصيد الكلي المتاح' : 'Available Stock' }}</th>
                             </tr>
                         </thead>
                         <tbody class="fs-7">
@@ -259,11 +271,11 @@
                                     }
                                 @endphp
                                 <tr>
-                                    <td class="ps-3 font-mono font-bold text-primary">{{ $itemCode }}</td>
-                                    <td><span class="badge bg-slate-100 text-slate-700 font-medium px-2 py-1">{{ $categoryName }}</span></td>
+                                    <td class="ps-4 font-mono font-bold text-primary">{{ $itemCode }}</td>
+                                    <td><span class="badge bg-slate-100 text-slate-700 font-medium px-2.5 py-1">{{ $categoryName }}</span></td>
                                     <td class="font-bold text-slate-900 fs-6">{{ $itemName }}</td>
-                                    <td class="pe-3 text-end font-mono">
-                                        <span class="badge {{ $stk > 0 ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-danger-subtle text-danger border border-danger-subtle' }} px-2.5 py-1 rounded-pill fs-7">
+                                    <td class="pe-4 text-end font-mono">
+                                        <span class="badge {{ $stk > 0 ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-danger-subtle text-danger border border-danger-subtle' }} px-3 py-1.5 rounded-pill fs-7 font-bold">
                                             {{ number_format($stk, 0) }} {{ $unitName }}
                                         </span>
                                     </td>

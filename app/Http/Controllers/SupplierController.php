@@ -5,8 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\Supplier;
 use App\Models\Branch;
 use App\Models\ActivityLog;
+use App\Http\Requests\StoreSupplierRequest;
+use App\Http\Requests\UpdateSupplierRequest;
+use App\Http\Requests\UploadSupplierAttachmentRequest;
 use Illuminate\Http\Request;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+
 
 class SupplierController extends Controller
 {
@@ -52,28 +56,11 @@ class SupplierController extends Controller
         return view('suppliers.create', compact('branches'));
     }
 
-    public function store(Request $request)
+    public function store(StoreSupplierRequest $request)
     {
         $this->authorize('create-suppliers');
 
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'company_name' => ['nullable', 'string', 'max:255'],
-            'contact_person' => ['nullable', 'string', 'max:255'],
-            'phone' => ['required', 'string', 'max:50'],
-            'phone_secondary' => ['nullable', 'string', 'max:50'],
-            'email' => ['nullable', 'string', 'email', 'max:255'],
-            'address' => ['nullable', 'string', 'max:255'],
-            'city' => ['nullable', 'string', 'max:100'],
-            'cr_number' => ['nullable', 'string', 'max:50'],
-            'vat_number' => ['nullable', 'string', 'max:50'],
-            'services_provided' => ['nullable', 'string'],
-            'rating' => ['required', 'integer', 'min:1', 'max:5'],
-            'is_active' => ['boolean'],
-            'notes' => ['nullable', 'string'],
-            'branch_id' => ['nullable', 'exists:branches,id'],
-            'attachment' => ['nullable', 'file', 'max:10240'],
-        ]);
+        $validated = $request->validated();
 
         $supplier = Supplier::create([
             'code' => Supplier::generateCode(),
@@ -134,27 +121,11 @@ class SupplierController extends Controller
         return view('suppliers.edit', compact('supplier', 'branches'));
     }
 
-    public function update(Request $request, $locale, Supplier $supplier)
+    public function update(UpdateSupplierRequest $request, $locale, Supplier $supplier)
     {
         $this->authorize('edit-suppliers');
 
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'company_name' => ['nullable', 'string', 'max:255'],
-            'contact_person' => ['nullable', 'string', 'max:255'],
-            'phone' => ['required', 'string', 'max:50'],
-            'phone_secondary' => ['nullable', 'string', 'max:50'],
-            'email' => ['nullable', 'string', 'email', 'max:255'],
-            'address' => ['nullable', 'string', 'max:255'],
-            'city' => ['nullable', 'string', 'max:100'],
-            'cr_number' => ['nullable', 'string', 'max:50'],
-            'vat_number' => ['nullable', 'string', 'max:50'],
-            'services_provided' => ['nullable', 'string'],
-            'rating' => ['required', 'integer', 'min:1', 'max:5'],
-            'is_active' => ['boolean'],
-            'notes' => ['nullable', 'string'],
-            'branch_id' => ['nullable', 'exists:branches,id'],
-        ]);
+        $validated = $request->validated();
 
         $supplier->update([
             'name' => $validated['name'],
@@ -198,13 +169,9 @@ class SupplierController extends Controller
         return redirect()->route('suppliers.index')->with('success', __('suppliers.deleted_successfully'));
     }
 
-    public function uploadAttachment(Request $request, $locale, Supplier $supplier)
+    public function uploadAttachment(UploadSupplierAttachmentRequest $request, $locale, Supplier $supplier)
     {
         $this->authorize('edit-suppliers');
-
-        $request->validate([
-            'attachment' => ['required', 'file', 'max:10240'],
-        ]);
 
         $file = $request->file('attachment');
         $path = $file->store('attachments/suppliers', 'public');

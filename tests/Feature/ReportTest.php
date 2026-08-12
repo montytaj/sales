@@ -179,4 +179,30 @@ class ReportTest extends TestCase
         $response->assertSee('تاريخ الطباعة');
         $response->assertSee('توقيع المحاسب');
     }
+
+    public function test_financial_comparison_report_page(): void
+    {
+        $response = $this->actingAs($this->admin)->get('/ar/reports/financial-comparison');
+        $response->assertStatus(200);
+        $response->assertSee('شاشة مقارنة الفترات المالية');
+    }
+
+    public function test_financial_comparison_csv_export(): void
+    {
+        $response = $this->actingAs($this->admin)->get('/ar/reports/financial-comparison?export=csv');
+        $response->assertStatus(200);
+        $response->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
+    }
+
+    public function test_balance_sheet_report_page(): void
+    {
+        $response = $this->actingAs($this->admin)->get('/ar/reports/balance-sheet');
+        $response->assertStatus(200);
+    }
+
+    public function test_income_statement_report_page(): void
+    {
+        $response = $this->actingAs($this->admin)->get('/ar/reports/income-statement');
+        $response->assertStatus(200);
+    }
 }

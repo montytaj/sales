@@ -452,11 +452,79 @@ class DemoDataSeeder extends Seeder
             'notes' => 'تم إغلاق وتدقيق حسابات الخزنة بنجاح',
         ]);
 
-        // 7. Seed Invoices, Payment Vouchers, Cheques
+        // 6.5. Seed Quotations
         $now = Carbon::now();
         $dateM5 = $now->copy()->subMonths(5);
         $cust1 = $seededCustomers[0];
         $cust2 = $seededCustomers[1];
+
+        $q1 = Quotation::create([
+            'quotation_number' => 'OFFER-2026-00001',
+            'customer_id' => $cust1->id,
+            'branch_id' => $mainBranch->id,
+            'status' => 'accepted',
+            'is_approved' => true,
+            'approved_by' => $admin->id,
+            'approved_at' => $dateM5->copy()->subDays(5),
+            'issue_date' => $dateM5->copy()->subDays(10),
+            'expiry_date' => $dateM5->copy()->addDays(20),
+            'subtotal' => 150000.00,
+            'discount_amount' => 5000.00,
+            'tax_amount' => 21750.00,
+            'total_amount' => 166750.00,
+            'notes' => 'عرض سعر توريد وتصنيع قواطع وديكورات مقر شركة الأعمال المتقدمة',
+            'terms_conditions' => 'الدفع 50% مقدم و 50% عند التسليم النهائي',
+            'created_by' => $salesUser->id,
+        ]);
+
+        QuotationItem::create([
+            'quotation_id' => $q1->id,
+            'service_id' => $seededServices[1]->id,
+            'item_name' => 'تصنيع وتثبيت خزائن ومكاتب إدارية MDF',
+            'description' => 'تصنيع وتثبيت خزائن ومكاتب إدارية MDF إسباني فاخر',
+            'quantity' => 10,
+            'unit_of_measure' => 'متر طولي',
+            'unit_price' => 15000.00,
+            'discount_amount' => 5000.00,
+            'tax_percent' => 15.00,
+            'tax_amount' => 21750.00,
+            'subtotal' => 145000.00,
+            'total' => 166750.00,
+            'sort_order' => 1,
+        ]);
+
+        $q2 = Quotation::create([
+            'quotation_number' => 'OFFER-2026-00002',
+            'customer_id' => $cust2->id,
+            'branch_id' => $workshopBranch->id,
+            'status' => 'sent',
+            'is_approved' => false,
+            'issue_date' => Carbon::now()->subDays(3),
+            'expiry_date' => Carbon::now()->addDays(27),
+            'subtotal' => 45000.00,
+            'discount_amount' => 0.00,
+            'tax_amount' => 6750.00,
+            'total_amount' => 51750.00,
+            'notes' => 'عرض سعر تصنيع لافتة كلادينج مضاءة بشعار الألومنيوم',
+            'terms_conditions' => 'ساري لمدة 30 يوم من تاريخ الصدور',
+            'created_by' => $salesUser->id,
+        ]);
+
+        QuotationItem::create([
+            'quotation_id' => $q2->id,
+            'service_id' => $seededServices[0]->id,
+            'item_name' => 'تصنيع لافتة كلادينج مضاءة',
+            'description' => 'تصنيع لافتة كلادينج 3D مضاءة LED عالية الجودة',
+            'quantity' => 1,
+            'unit_of_measure' => 'متر مربع',
+            'unit_price' => 45000.00,
+            'discount_amount' => 0.00,
+            'tax_percent' => 15.00,
+            'tax_amount' => 6750.00,
+            'subtotal' => 45000.00,
+            'total' => 51750.00,
+            'sort_order' => 1,
+        ]);
 
         $inv1 = Invoice::create([
             'invoice_number' => 'INV-2026-0001',

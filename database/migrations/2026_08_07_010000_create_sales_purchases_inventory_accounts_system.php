@@ -182,7 +182,7 @@ return new class extends Migration
                 $table->foreignId('warehouse_id')->nullable()->after('supplier_id')->constrained('warehouses')->nullOnDelete();
             }
             if (!Schema::hasColumn('purchase_invoices', 'payment_type')) {
-                $table->enum('payment_type', ['cash', 'bank', 'credit'])->default('cash')->after('status');
+                $table->string('payment_type', 50)->default('cash')->after('status');
             }
             if (!Schema::hasColumn('purchase_invoices', 'discount_amount')) {
                 $table->decimal('discount_amount', 15, 2)->default(0.00)->after('tax_amount');
@@ -214,7 +214,7 @@ return new class extends Migration
                 $table->foreignId('warehouse_id')->nullable()->after('customer_id')->constrained('warehouses')->nullOnDelete();
             }
             if (!Schema::hasColumn('invoices', 'payment_type')) {
-                $table->enum('payment_type', ['cash', 'bank', 'credit'])->default('cash')->after('status');
+                $table->string('payment_type', 50)->default('cash')->after('status');
             }
             if (!Schema::hasColumn('invoices', 'discount_amount')) {
                 $table->decimal('discount_amount', 15, 2)->default(0.00)->after('tax_amount');
@@ -245,7 +245,7 @@ return new class extends Migration
                 $table->decimal('total_amount', 15, 2)->default(0.00);
                 $table->decimal('tax_amount', 15, 2)->default(0.00);
                 $table->decimal('net_amount', 15, 2)->default(0.00);
-                $table->enum('payment_type', ['cash', 'bank', 'credit'])->default('cash');
+                $table->string('payment_type', 50)->default('cash');
                 $table->text('notes')->nullable();
                 $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
                 $table->timestamps();
@@ -278,7 +278,7 @@ return new class extends Migration
                 $table->decimal('total_amount', 15, 2)->default(0.00);
                 $table->decimal('tax_amount', 15, 2)->default(0.00);
                 $table->decimal('net_amount', 15, 2)->default(0.00);
-                $table->enum('payment_type', ['cash', 'bank', 'credit'])->default('cash');
+                $table->string('payment_type', 50)->default('cash');
                 $table->text('notes')->nullable();
                 $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
                 $table->timestamps();

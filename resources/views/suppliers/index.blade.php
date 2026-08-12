@@ -66,8 +66,7 @@
                 <table class="table table-hover align-middle datatable mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th scope="col" class="ps-3">{{ __('suppliers.code') }}</th>
-                            <th scope="col">{{ __('suppliers.name') }}</th>
+                            <th scope="col" class="ps-3">{{ __('suppliers.name') }}</th>
                             <th scope="col">{{ __('suppliers.contact_person') }}</th>
                             <th scope="col">{{ __('suppliers.phone') }}</th>
                             <th scope="col">{{ __('suppliers.rating') }}</th>
@@ -78,8 +77,7 @@
                     <tbody>
                         @forelse ($suppliers as $supplier)
                             <tr>
-                                <td class="ps-3"><code>{{ $supplier->code }}</code></td>
-                                <td class="fw-semibold">
+                                <td class="ps-3 fw-semibold">
                                     <a href="{{ route('suppliers.show', $supplier) }}" class="text-decoration-none text-dark hover-primary">
                                         {{ $supplier->name }}
                                         @if ($supplier->company_name)
@@ -103,14 +101,14 @@
                                         <span class="badge bg-danger-subtle text-danger border border-danger">{{ __('suppliers.inactive') }}</span>
                                     @endif
                                 </td>
-                                <td class="text-end pe-3">
-                                    <div class="btn-group btn-group-sm" role="group">
-                                        <a href="{{ route('suppliers.show', $supplier) }}" class="btn btn-outline-secondary" title="{{ __('suppliers.show_supplier') }}">
+                                <td class="text-end pe-3 text-nowrap">
+                                    <div class="d-inline-flex align-items-center gap-1">
+                                        <a href="{{ route('suppliers.show', $supplier) }}" class="btn btn-action-icon btn-action-show" title="عرض">
                                             <i class="bi bi-eye"></i>
                                         </a>
 
                                         @can('edit-suppliers')
-                                            <a href="{{ route('suppliers.edit', $supplier) }}" class="btn btn-outline-primary" title="{{ __('suppliers.edit_supplier') }}">
+                                            <a href="{{ route('suppliers.edit', $supplier) }}" class="btn btn-action-icon btn-action-edit" title="تعديل">
                                                 <i class="bi bi-pencil"></i>
                                             </a>
                                         @endcan
@@ -119,7 +117,7 @@
                                             <form method="POST" action="{{ route('suppliers.destroy', $supplier) }}" class="d-inline" onsubmit="return confirm('هل أنت تأكد من رغبتك في حذف هذا المورد؟');">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="btn btn-outline-danger" title="حذف">
+                                                <button type="submit" class="btn btn-action-icon btn-action-delete" title="حذف">
                                                     <i class="bi bi-trash"></i>
                                                 </button>
                                             </form>
@@ -129,7 +127,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="text-center py-4 text-muted">
+                                <td colspan="6" class="text-center py-4 text-muted">
                                     <i class="bi bi-truck fs-3 d-block mb-2"></i>
                                     {{ __('suppliers.no_suppliers_found') }}
                                 </td>

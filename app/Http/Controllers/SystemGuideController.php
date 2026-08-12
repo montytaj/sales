@@ -170,9 +170,94 @@ class SystemGuideController extends Controller
                     'Sales & Profitability reports tracking gross revenue, net profit, and discounts.',
                     'Direct printing and export options for all system reports.'
                 ]
+            ],
+            [
+                'id' => 'accounting-cycle-full',
+                'category' => 'accounting_cycle',
+                'icon' => 'bi-arrow-repeat',
+                'badge_color' => 'primary',
+                'title_ar' => 'الدورة المحاسبية الكاملة (8 مراحل متتالية)',
+                'title_en' => 'Full 8-Stage Accounting Cycle',
+                'summary_ar' => 'رحلة المعاملة المالية من لحظة حدوثها حتى ظهورها في القوائم المالية، وهي دورة مستمرة ومتكررة في كل فترة مالية.',
+                'summary_en' => 'The journey of financial transactions from initial occurrence to financial statements presentation across recurring accounting periods.',
+                'features_ar' => [
+                    '1. حدوث المعاملة المالية: شراء، دفع، استلام وثيقة مؤيدة.',
+                    '2. تسجيل القيود اليومية: في دفتر اليومية (المدين = الدائن).',
+                    '3. ترحيل الحسابات: إلى دفتر الأستاذ (الأصول، الخصوم، حقوق الملكية).',
+                    '4. إعداد ميزان المراجعة: جمع الحسابات (إجمالي المدين = إجمالي الدائن).',
+                    '5. التسويات الجردية: تسوية المخزون، الإهلاك، المستحقات، والمقدمات.',
+                    '6. ميزان المراجعة بعد التسويات: التأكد من التوازن لإعداد القوائم المالية.',
+                    '7. إعداد القوائم المالية: قائمة الدخل، الميزانية العمومية، التدفقات النقدية.',
+                    '8. إقفال الحسابات المؤقتة: إقفال الإيرادات والمصروفات ونقل الأرباح/الخسائر.'
+                ],
+                'features_en' => [
+                    '1. Transaction Occurrence: Purchase, payment, document reception.',
+                    '2. Journal Entries: Recorded in General Journal (Debit = Credit).',
+                    '3. Ledger Posting: Post to General Ledger accounts (Assets, Liabilities, Equity).',
+                    '4. Trial Balance: Sum of all accounts (Total Debit = Total Credit).',
+                    '5. Adjusting Entries: Inventory adjustments, depreciation, accruals/deferrals.',
+                    '6. Adjusted Trial Balance: Verification before financial statements prep.',
+                    '7. Financial Statements: Income Statement, Balance Sheet, Cash Flow.',
+                    '8. Closing Entries: Closing revenue & expense accounts to Retained Earnings.'
+                ]
+            ],
+            [
+                'id' => 'inventory-valuation-cogs',
+                'category' => 'accounting_cycle',
+                'icon' => 'bi-boxes',
+                'badge_color' => 'emerald',
+                'title_ar' => 'المخزون والجرد وتكلفة البضاعة المباعة (COGS)',
+                'title_en' => 'Inventory Valuation & COGS Accounting',
+                'summary_ar' => 'مفهوم المخزون كـ أصل متداول، معادلة تكلفة البضاعة المباعة، مقارنة الجرد المستمر والجرد الدوري، وقيود تسوية عجز وتلف المخزون.',
+                'summary_en' => 'Inventory as current asset, COGS formula, Perpetual vs Periodic inventory systems, and inventory shrinkage journal entries.',
+                'features_ar' => [
+                    'معادلة تكلفة البضاعة المباعة = مخزون أول المدة + المشتريات - مردودات المشتريات - مخزون آخر المدة.',
+                    'الجرد المستمر: معرفة رصيد المخزون وتكلفة المباعة في أي وقت (للمنشآت المتوسطة والكبيرة).',
+                    'الجرد الدوري: معرفة المخزون والتكلفة بنهاية الفترة بـ الجرد الفعلي (للمنشآت الصغيرة).',
+                    'الفرق بين المخزون والمصروف: المخزون أصل متداول بالميزانية، والمصروف تكلفة فترة بقائمة الدخل.',
+                    'قيود إثبات نتيجة الجرد: من حـ/ خسائر مخزون (تالف + مفقود) إلى حـ/ المخزون.',
+                    'حساب مجمل الربح وإعادة القيمة في القوائم المالية لتقييم الأداء.'
+                ],
+                'features_en' => [
+                    'COGS Formula = Beginning Inventory + Purchases - Purchase Returns - Ending Inventory.',
+                    'Perpetual Inventory: Real-time stock & COGS tracking via barcode/software.',
+                    'Periodic Inventory: Physical count verification at period end.',
+                    'Difference: Inventory is Balance Sheet Current Asset; Expenses hit Income Statement.',
+                    'Inventory Shrinkage Entry: Debit Inventory Loss Account / Credit Inventory Account.',
+                    'Gross profit determination & inventory valuation in financial statements.'
+                ]
+            ],
+            [
+                'id' => 'depreciation-and-closing',
+                'category' => 'accounting_cycle',
+                'icon' => 'bi-calculator-fill',
+                'badge_color' => 'info',
+                'title_ar' => 'الإهلاك المحاسبي وطرائق إقفال الحسابات',
+                'title_en' => 'Asset Depreciation & Year-End Closing Entries',
+                'summary_ar' => 'توزيع تكلفة الأصوب الثابتة، طرائق الإهلاك الثلاث (القسط الثابت، المتناقص، وحدات الإنتاج)، وقواعد إقفال الحسابات المؤقتة.',
+                'summary_en' => 'Fixed asset cost allocation across useful life, 3 depreciation methods, and temporary account closing rules.',
+                'features_ar' => [
+                    'طريقة القسط الثابت: الإهلاك السنوي = (تكلفة الأصل - القيمة التخريدية) / العمر الإنتاجي.',
+                    'طريقة القسط المتناقص: قيمة إهلاك مرتفعة في السنوات الأولى تتخفض تدريجياً.',
+                    'طريقة وحدات الإنتاج: الإهلاك يعتمد على حجم الاستخدام أو عدد الوحدات المنتجة.',
+                    'قيد الإهلاك: 18,000 من حـ/ مصروف الإهلاك إلى 18,000 حـ/ مجمع الإهلاك (الأرض لا تهلك).',
+                    'إقفال الإيرادات: من حـ/ الإيرادات إلى حـ/ الأرباح والخسائر.',
+                    'إقفال المصروفات: من حـ/ الأرباح والخسائر إلى حـ/ المصروفات.',
+                    'إقفال صافي الربح/الخسارة والمسحوبات الشخصية بنهاية الفترة المالية.'
+                ],
+                'features_en' => [
+                    'Straight-Line Method: Annual Depreciation = (Cost - Salvage) / Lifespan Years.',
+                    'Declining Balance Method: Accelerated depreciation rate in early asset years.',
+                    'Units of Production: Depreciation based on actual output/usage capacity.',
+                    'Depreciation Entry: Debit Depreciation Expense / Credit Accumulated Depreciation.',
+                    'Closing Revenue: Debit Revenues / Credit Profit & Loss account.',
+                    'Closing Expenses: Debit Profit & Loss / Credit Expenses accounts.',
+                    'Net Profit/Loss & Owner Drawings closing to Equity / Retained Earnings.'
+                ]
             ]
         ];
 
         return view('guide.index', compact('facilityName', 'primaryColor', 'modules'));
     }
 }
+

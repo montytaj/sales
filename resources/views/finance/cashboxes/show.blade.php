@@ -93,7 +93,7 @@
                                 <td>{{ $shift->opened_at->format('Y-m-d H:i') }}</td>
                                 <td>{{ $shift->closed_at?->format('Y-m-d H:i') ?? '-' }}</td>
                                 <td>{{ number_format($shift->expected_closing_balance, 2) }} {{ setting('currency', 'SDG') }}</td>
-                                <td>{{ $shift->actual_closing_balance !== null ? number_format($shift->actual_closing_balance, 2) . ' {{ setting('currency', 'SDG') }}' : '-' }}</td>
+                                <td>{{ $shift->actual_closing_balance !== null ? number_format($shift->actual_closing_balance, 2) . ' ' . setting('currency', 'SDG') : '-' }}</td>
                                 <td>
                                     @if ($shift->difference_amount == 0)
                                         <span class="text-success fw-bold">0.00</span>

@@ -55,62 +55,122 @@
         </div>
     </div>
 
-    <!-- Invoices Table -->
-    <div class="card shadow-sm border-0">
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle datatable mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th scope="col" class="ps-3">{{ __('sales.invoice_number') }}</th>
-                            <th scope="col">{{ __('customers.name') }}</th>
-                            <th scope="col">{{ __('sales.issue_date') }}</th>
-                            <th scope="col">{{ __('sales.due_date') }}</th>
-                            <th scope="col">{{ __('sales.total_amount') }}</th>
-                            <th scope="col">الحالة</th>
-                            <th scope="col" class="text-end pe-3">الإجراءات</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse ($invoices as $invoice)
-                            <tr>
-                                <td class="ps-3"><code>{{ $invoice->invoice_number }}</code></td>
-                                <td class="fw-semibold">{{ $invoice->customer->name }}</td>
-                                <td>{{ $invoice->issue_date->format('Y-m-d') }}</td>
-                                <td>{{ $invoice->due_date?->format('Y-m-d') ?? '-' }}</td>
-                                <td><strong class="text-success">{{ number_format($invoice->total_amount, 2) }} {{ setting('currency', 'SDG') }}</strong></td>
-                                <td>
-                                    <span class="badge bg-primary-subtle text-primary border border-primary">
-                                        {{ __('sales.invoice_statuses.' . $invoice->status) }}
-                                    </span>
-                                </td>
-                                <td class="text-end pe-3">
-                                    <div class="btn-group btn-group-sm" role="group">
-                                        <a href="{{ route('invoices.show', $invoice) }}" class="btn btn-outline-secondary" title="عرض">
-                                            <i class="bi bi-eye"></i>
-                                        </a>
-                                        <a href="{{ route('invoices.print', $invoice) }}" target="_blank" class="btn btn-outline-dark" title="طباعة">
-                                            <i class="bi bi-printer"></i>
-                                        </a>
-                                    </div>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="7" class="text-center py-4 text-muted">
-                                    <i class="bi bi-receipt fs-3 d-block mb-2"></i>
-                                    لا توجد فواتير مبيعات مسجلة حالياً.
-                                </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+    <!-- Invoices Table & Batch Actions -->
+    <form method="POST" action="{{ route('invoices.batch-print') }}" target="_blank" id="batchPrintForm">
+        @csrf
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-light text-dark border px-2.5 py-1.5 fs-7">
+                        <i class="bi bi-check-square me-1 text-primary"></i>الطباعة الجماعية للفواتير
+                    </span>
+                    <span class="text-muted fs-8 d-none d-sm-inline">اختر الفواتير ثم انقر زر الطباعة الجماعية لتوليد ملف طباعة موحد.</span>
+                </div>
+                <button type="submit" class="btn btn-outline-primary btn-sm font-bold d-inline-flex align-items-center gap-1.5" id="btnBatchPrint" disabled>
+                    <i class="bi bi-printer-fill fs-6"></i>
+                    <span>طباعة الفواتير المحددة</span>
+                    <span class="badge bg-primary text-white ms-1" id="selectedCountBadge">0</span>
+                </button>
             </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle datatable mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th scope="col" class="ps-3" style="width: 40px;">
+                                    <input type="checkbox" class="form-check-input" id="selectAllInvoices" title="تحديد / إلغاء تحديد الكل">
+                                </th>
+                                <th scope="col">{{ __('sales.invoice_number') }}</th>
+                                <th scope="col">{{ __('customers.name') }}</th>
+                                <th scope="col">{{ __('sales.issue_date') }}</th>
+                                <th scope="col">{{ __('sales.due_date') }}</th>
+                                <th scope="col">{{ __('sales.total_amount') }}</th>
+                                <th scope="col">الحالة</th>
+                                <th scope="col" class="text-end pe-3">الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse ($invoices as $invoice)
+                                <tr>
+                                    <td class="ps-3">
+                                        <input type="checkbox" name="ids[]" value="{{ $invoice->id }}" class="form-check-input invoice-cb">
+                                    </td>
+                                    <td>
+                                        <code>{{ $invoice->invoice_number }}</code>
+                                        @if($invoice->quotation)
+                                            <div class="mt-1">
+                                                <a href="{{ route('quotations.show', $invoice->quotation) }}" class="badge bg-info-subtle text-info border border-info-subtle text-decoration-none fs-8" title="عرض السعر الأصلي">
+                                                    <i class="bi bi-file-earmark-text me-1"></i>عرض سعر: {{ $invoice->quotation->quotation_number }}
+                                                </a>
+                                            </div>
+                                        @endif
+                                    </td>
+                                    <td class="fw-semibold">{{ $invoice->customer->name }}</td>
+                                    <td>{{ $invoice->issue_date->format('Y-m-d') }}</td>
+                                    <td>{{ $invoice->due_date?->format('Y-m-d') ?? '-' }}</td>
+                                    <td><strong class="text-success">{{ number_format($invoice->total_amount, 2) }} {{ setting('currency', 'SDG') }}</strong></td>
+                                    <td>
+                                        <span class="badge bg-primary-subtle text-primary border border-primary">
+                                            {{ __('sales.invoice_statuses.' . $invoice->status) }}
+                                        </span>
+                                    </td>
+                                    <td class="text-end pe-3 text-nowrap">
+                                        <div class="d-inline-flex align-items-center gap-1">
+                                            <a href="{{ route('invoices.show', $invoice) }}" class="btn btn-action-icon btn-action-show" title="عرض">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a href="{{ route('invoices.print', $invoice) }}" target="_blank" class="btn btn-action-icon btn-action-print" title="طباعة">
+                                                <i class="bi bi-printer"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="8" class="text-center py-4 text-muted">
+                                        <i class="bi bi-receipt fs-3 d-block mb-2"></i>
+                                        لا توجد فواتير مبيعات مسجلة حالياً.
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            @if ($invoices->hasPages())
+                <div class="card-footer bg-white border-0 py-3">
+                    {{ $invoices->links() }}
+                </div>
+            @endif
         </div>
-        @if ($invoices->hasPages())
-            <div class="card-footer bg-white border-0 py-3">
-                {{ $invoices->links() }}
-            </div>
-        @endif
-    </div>
+    </form>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const selectAll = document.getElementById('selectAllInvoices');
+            const checkboxes = document.querySelectorAll('.invoice-cb');
+            const batchBtn = document.getElementById('btnBatchPrint');
+            const badge = document.getElementById('selectedCountBadge');
+
+            function updateBatchBtn() {
+                const checkedCount = document.querySelectorAll('.invoice-cb:checked').length;
+                if (badge) badge.textContent = checkedCount;
+                if (batchBtn) batchBtn.disabled = checkedCount === 0;
+            }
+
+            if (selectAll) {
+                selectAll.addEventListener('change', function() {
+                    checkboxes.forEach(cb => cb.checked = selectAll.checked);
+                    updateBatchBtn();
+                });
+            }
+
+            checkboxes.forEach(cb => {
+                cb.addEventListener('change', function() {
+                    if (!this.checked && selectAll) selectAll.checked = false;
+                    updateBatchBtn();
+                });
+            });
+        });
+    </script>
 </x-app-layout>

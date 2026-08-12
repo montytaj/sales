@@ -2,11 +2,16 @@
     <x-slot name="header">
         <div class="d-flex justify-content-between align-items-center">
             <h2 class="h4 mb-0 font-bold text-gray-800">
-                <i class="bi bi-cart-plus-fill text-primary me-2"></i>إدارة فواتير المشتريات (Purchase Invoices)
+                <i class="bi bi-cart-plus-fill text-primary me-2"></i>{{ app()->getLocale() == 'ar' ? 'إدارة فواتير المشتريات' : 'Purchase Invoices' }}
             </h2>
-            <a href="{{ route('purchases.create_invoice') }}" class="btn btn-primary">
-                <i class="bi bi-plus-circle me-1"></i>تسجيل فاتورة شراء جديدة
-            </a>
+            <div class="d-flex gap-2">
+                <a href="{{ route('purchases.payables') }}" class="btn btn-outline-danger">
+                    <i class="bi bi-hourglass-split me-1"></i>سداد الآجل ومستحقات الموردين
+                </a>
+                <a href="{{ route('purchases.create_invoice') }}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle me-1"></i>تسجيل فاتورة شراء جديدة
+                </a>
+            </div>
         </div>
     </x-slot>
 
@@ -17,12 +22,12 @@
                     <thead class="table-light">
                         <tr>
                             <th>#</th>
-                            <th>رقم فاتورة الشراء</th>
-                            <th>اسم المورد</th>
-                            <th>المخزن المستلم</th>
-                            <th>تاريخ الفاتورة</th>
-                            <th>طريقة الدفع</th>
-                            <th>إجمالي الفاتورة</th>
+                            <th>الفاتورة</th>
+                            <th>المورد</th>
+                            <th>المخزن</th>
+                            <th>التاريخ</th>
+                            <th>الدفع</th>
+                            <th>الإجمالي</th>
                             <th>الحالة</th>
                             <th>الإجراءات</th>
                         </tr>
@@ -40,6 +45,8 @@
                                         <span class="badge bg-success-subtle text-success">نقدي</span>
                                     @elseif($inv->payment_type == 'bank')
                                         <span class="badge bg-primary-subtle text-primary">بنكي</span>
+                                    @elseif($inv->payment_type == 'split')
+                                        <span class="badge bg-info-subtle text-info">دفع متعدد (كاش+بنك+آجل)</span>
                                     @else
                                         <span class="badge bg-warning-subtle text-warning">آجل</span>
                                     @endif
@@ -48,16 +55,25 @@
                                 <td>
                                     @if($inv->status == 'paid')
                                         <span class="badge bg-success">مدفوعة بالكامل</span>
+                                    @elseif($inv->status == 'partially_paid')
+                                        <span class="badge bg-warning text-dark">مدفوعة جزئياً (المتبقي: {{ number_format($inv->due_amount, 2) }})</span>
                                     @elseif($inv->status == 'unpaid')
-                                        <span class="badge bg-danger">غير مدفوعة (آجل)</span>
+                                        <span class="badge bg-danger">غير مدفوعة (آجل: {{ number_format($inv->due_amount, 2) }})</span>
                                     @else
-                                        <span class="badge bg-warning text-dark">{{ $inv->status }}</span>
+                                        <span class="badge bg-secondary">{{ $inv->status }}</span>
                                     @endif
                                 </td>
-                                <td>
-                                    <a href="{{ route('purchases.show_invoice', $inv) }}" class="btn btn-sm btn-outline-info">
-                                        <i class="bi bi-eye"></i> عرض
-                                    </a>
+                                <td class="text-nowrap">
+                                    <div class="d-inline-flex align-items-center gap-1">
+                                        <a href="{{ route('purchases.show_invoice', $inv) }}" class="btn btn-action-icon btn-action-show" title="عرض">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        @if($inv->due_amount > 0 || $inv->status !== 'paid')
+                                            <a href="{{ route('purchases.pay_invoice', $inv) }}" class="btn btn-sm btn-success fw-bold px-2 py-1" title="سداد المستحق">
+                                                <i class="bi bi-wallet2 me-1"></i>سداد
+                                            </a>
+                                        @endif
+                                    </div>
                                 </td>
                             </tr>
                         @empty

@@ -13,11 +13,12 @@ use App\Models\StockMovement;
 use App\Models\Account;
 use App\Models\JournalEntry;
 use App\Models\JournalEntryLine;
+use App\Services\AccountResolver;
+use App\Http\Requests\StorePosSaleRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
-
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class PosController extends Controller
@@ -27,12 +28,7 @@ class PosController extends Controller
     public function index($locale = 'ar')
     {
         $this->authorize('view-invoices');
-        $categories = ItemCategory::where('is_active', true)
-            ->withCount(['items' => function ($q) {
-                $q->where('is_active', true);
-            }])
-            ->get();
-
+        $categories = ItemCategory::where('is_active', true)->orderBy('name')->get();
         $items = InventoryItem::with(['category', 'baseUnit', 'wholesaleUnit', 'warehouseItems'])
             ->where('is_active', true)
             ->get();
@@ -44,20 +40,9 @@ class PosController extends Controller
         return view('pos.index', compact('categories', 'items', 'customers', 'warehouses', 'cashboxes'));
     }
 
-    public function store($locale = 'ar', Request $request)
+    public function store($locale = 'ar', StorePosSaleRequest $request)
     {
         $this->authorize('create-invoices');
-
-        $request->validate([
-            'customer_id' => 'nullable|exists:customers,id',
-            'warehouse_id' => 'required|exists:warehouses,id',
-            'payment_type' => 'required|in:cash,card,credit',
-            'items' => 'required|array|min:1',
-            'items.*.id' => 'required|exists:inventory_items,id',
-            'items.*.qty' => 'required|numeric|min:0.01',
-            'items.*.unit_type' => 'required|in:base,wholesale',
-            'items.*.price' => 'required|numeric|min:0',
-        ]);
 
         return DB::transaction(function () use ($request) {
             $user = Auth::user();
@@ -95,7 +80,9 @@ class PosController extends Controller
                 $whItem = DB::table('warehouse_items')
                     ->where('warehouse_id', $warehouseId)
                     ->where('inventory_item_id', $itemId)
+                    ->lockForUpdate()
                     ->first();
+
 
                 $availableStock = $whItem ? max(0, (float)$whItem->qty_in_base_units) : 0;
 
@@ -186,11 +173,13 @@ class PosController extends Controller
                     'created_by' => $user->id,
                 ]);
 
-                // Deduct warehouse item stock safely
+                // Deduct warehouse item stock safely with row lock
                 $whItem = DB::table('warehouse_items')
                     ->where('warehouse_id', $warehouseId)
                     ->where('inventory_item_id', $item->id)
+                    ->lockForUpdate()
                     ->first();
+
 
                 if ($whItem) {
                     $newQty = max(0, (float)$whItem->qty_in_base_units - $data['qty_in_base']);
@@ -209,8 +198,11 @@ class PosController extends Controller
             }
 
             // Journal Entry
-            $cashAccount = Account::where('code', '111101')->first() ?: Account::where('nature', 'debit')->first();
-            $salesAccount = Account::where('code', '4101')->first() ?: Account::where('type', 'revenue')->first();
+            $cashboxModel = !empty($cashboxId) ? Cashbox::find($cashboxId) : null;
+            $cashAccount = AccountResolver::getCashboxAccount($cashboxModel);
+            $salesAccount = AccountResolver::getSalesAccount();
+            $vatAccount = AccountResolver::getVatAccount();
+
 
             if ($cashAccount && $salesAccount) {
                 $je = JournalEntry::create([
@@ -231,14 +223,26 @@ class PosController extends Controller
                     'memo' => "تحصيل مبيعات POS",
                 ]);
 
-                // Credit Sales
+                // Credit Sales Revenue
                 JournalEntryLine::create([
                     'journal_entry_id' => $je->id,
                     'account_id' => $salesAccount->id,
                     'debit' => 0,
-                    'credit' => $totalAmount,
+                    'credit' => $taxableSubtotal,
                     'memo' => "إيراد مبيعات POS",
                 ]);
+
+                // Credit VAT Output Tax if applicable
+                if ($taxAmount > 0 && $vatAccount) {
+                    JournalEntryLine::create([
+                        'journal_entry_id' => $je->id,
+                        'account_id' => $vatAccount->id,
+                        'debit' => 0,
+                        'credit' => $taxAmount,
+                        'memo' => "ضريبة قيمة مضافة مبيعات POS ({$taxPercent}%)",
+                    ]);
+                }
+
             }
 
             return response()->json([

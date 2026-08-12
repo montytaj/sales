@@ -35,6 +35,9 @@ class PaymentVoucherController extends Controller
                 $q->where('voucher_number', 'like', "%{$search}%")
                   ->orWhereHas('customer', function ($cq) use ($search) {
                       $cq->where('name', 'like', "%{$search}%");
+                  })
+                  ->orWhereHas('supplier', function ($sq) use ($search) {
+                      $sq->where('name', 'like', "%{$search}%");
                   });
             });
         }
@@ -60,13 +63,23 @@ class PaymentVoucherController extends Controller
         $suppliers = Supplier::where('is_active', true)->get();
         $cashboxes = Cashbox::where('is_active', true)->get();
         $invoices = Invoice::whereNotIn('status', ['paid', 'cancelled'])->get();
+        $purchaseInvoices = \App\Models\PurchaseInvoice::whereNotIn('status', ['paid', 'cancelled'])
+            ->where('due_amount', '>', 0)
+            ->with('supplier')
+            ->get();
+        $accounts = \App\Models\Account::where('is_selectable', true)->orderBy('code')->get();
 
         $selectedInvoice = null;
         if ($request->filled('invoice_id')) {
             $selectedInvoice = Invoice::find($request->input('invoice_id'));
         }
 
-        return view('finance.payments.create', compact('customers', 'suppliers', 'cashboxes', 'invoices', 'selectedInvoice'));
+        $selectedPurchaseInvoice = null;
+        if ($request->filled('purchase_invoice_id')) {
+            $selectedPurchaseInvoice = \App\Models\PurchaseInvoice::with('supplier')->find($request->input('purchase_invoice_id'));
+        }
+
+        return view('finance.payments.create', compact('customers', 'suppliers', 'cashboxes', 'invoices', 'purchaseInvoices', 'selectedInvoice', 'selectedPurchaseInvoice', 'accounts'));
     }
 
     public function store(Request $request)
@@ -78,6 +91,7 @@ class PaymentVoucherController extends Controller
             'customer_id' => ['nullable', 'exists:customers,id'],
             'supplier_id' => ['nullable', 'exists:suppliers,id'],
             'invoice_id' => ['nullable', 'exists:invoices,id'],
+            'purchase_invoice_id' => ['nullable', 'exists:purchase_invoices,id'],
             'cashbox_id' => ['required', 'exists:cashboxes,id'],
             'target_cashbox_id' => ['nullable', 'exists:cashboxes,id'],
             'amount' => ['required', 'numeric', 'min:0.01'],
@@ -87,6 +101,7 @@ class PaymentVoucherController extends Controller
             // Payment lines validation (Split payments)
             'lines' => ['required', 'array', 'min:1'],
             'lines.*.payment_method' => ['required', 'in:cash,bank_transfer,card,cheque,credit,e_wallet,other'],
+            'lines.*.account_id' => ['nullable', 'exists:accounts,id'],
             'lines.*.amount' => ['required', 'numeric', 'min:0.01'],
             'lines.*.reference_number' => ['nullable', 'string', 'max:255'],
             'lines.*.notes' => ['nullable', 'string'],

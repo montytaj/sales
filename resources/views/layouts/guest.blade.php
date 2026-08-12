@@ -508,7 +508,7 @@
                 <!-- Form Footer -->
                 <div class="mt-4 pt-3 text-center border-top text-slate-400 fs-7">
                     <p class="mb-0">
-                        {{ __('general.copyright') }} &copy; {{ date('Y') }} <span class="fw-bold text-slate-700">{{ $facilityName }}</span>. {{ __('general.workshop_management') }}
+                        {{ __('general.copyright_zoal') }} &copy; {{ date('Y') }}
                     </p>
                 </div>
             </div>

@@ -23,6 +23,7 @@ return [
     'cheques_enabled' => 'Enable Cheques Management',
     'projects_enabled' => 'Enable Contracting & Projects Module',
     'signage_enabled' => 'Enable Signage Module',
+    'quick_actions_enabled' => 'Show Quick Actions Shortcuts on Main Dashboard',
     'save_settings' => 'Save Settings',
     'settings_saved_successfully' => 'System settings saved successfully.',
     'yes' => 'Yes (Allowed / Enabled)',

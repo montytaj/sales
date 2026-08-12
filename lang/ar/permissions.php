@@ -27,7 +27,7 @@ return [
     ],
 
     // Permission Names & Descriptions
-    'view-dashboard' => 'عرض لوحة التحكم الرئيسية',
+    'view-dashboard' => 'عرض لوحة التحكم',
     'view-users' => 'عرض قائمة المستخدمين',
     'create-users' => 'إضافة مستخدم جديد',
     'edit-users' => 'تعديل بيانات المستخدمين',
@@ -111,6 +111,10 @@ return [
     'manage-signage' => 'اعتماد التخصص الفني والقص والتجميع',
 
     'manage-inventory' => 'إدارة المخزون والتسويات وحركات الهالك',
+    'view-warehouse-transfers' => 'عرض سجل وسندات التحويل بين المخازن',
+    'create-warehouse-transfers' => 'إنشاء وإصدار طلب تحويل بين المخازن',
+    'approve-warehouse-transfers' => 'اعتماد وتأكيد نقل الرصيد بين المخازن',
+    'delete-warehouse-transfers' => 'إلغاء وحذف طلبات التحويل المخزني',
     'view-purchases' => 'عرض أمر الشراء وتوريدات الموردين',
     'create-purchases' => 'إصدار أمر شراء جديد للمورد',
     'manage-purchases' => 'استلام البضائع والمستندات المخزنية',

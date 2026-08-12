@@ -5,11 +5,15 @@ namespace App\Services;
 use App\Models\PaymentVoucher;
 use App\Models\PaymentVoucherLine;
 use App\Models\Cashbox;
+use App\Models\Customer;
+use App\Models\Supplier;
 use App\Models\Invoice;
 use App\Models\Cheque;
 use App\Models\ActivityLog;
+use App\Services\AccountResolver;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
+
 
 class PaymentService
 {
@@ -51,6 +55,7 @@ class PaymentService
                 'customer_id' => $data['customer_id'] ?? null,
                 'supplier_id' => $data['supplier_id'] ?? null,
                 'invoice_id' => $data['invoice_id'] ?? null,
+                'purchase_invoice_id' => $data['purchase_invoice_id'] ?? null,
                 'cashbox_id' => $data['cashbox_id'] ?? null,
                 'target_cashbox_id' => $data['target_cashbox_id'] ?? null,
                 'amount' => $totalAmount,
@@ -71,10 +76,12 @@ class PaymentService
                         'cheque_number' => $chequeData['cheque_number'],
                         'bank_name' => $chequeData['bank_name'],
                         'drawer_name' => $chequeData['drawer_name'],
+                        'payee_name' => $chequeData['payee_name'] ?? null,
                         'amount' => $line['amount'],
                         'issue_date' => $chequeData['issue_date'],
                         'due_date' => $chequeData['due_date'],
                         'status' => 'received',
+                        'type' => ($data['type'] === 'payment') ? 'outgoing' : 'incoming',
                         'notes' => $chequeData['notes'] ?? null,
                         'created_by' => auth()->id(),
                     ]);
@@ -104,17 +111,97 @@ class PaymentService
                 $targetCashbox->increment('current_balance', $totalAmount);
             }
 
-            // 7. Auto Reconciliation of Invoice Status
+            // 7. Auto Reconciliation of Sales Invoice Status
             if (!empty($data['invoice_id']) && $data['type'] === 'receipt') {
                 $invoice = Invoice::findOrFail($data['invoice_id']);
-                $totalPaid = PaymentVoucher::where('invoice_id', $invoice->id)
-                    ->where('status', 'completed')
-                    ->sum('amount');
+                $this->syncInvoicePaymentStatus($invoice);
+            }
 
-                if ($totalPaid >= $invoice->total_amount) {
-                    $invoice->update(['status' => 'paid']);
-                } elseif ($totalPaid > 0) {
-                    $invoice->update(['status' => 'partially_paid']);
+            // 8. Auto Reconciliation of Purchase Invoice Status
+            if (!empty($data['purchase_invoice_id']) && $data['type'] === 'payment') {
+                $pInvoice = \App\Models\PurchaseInvoice::findOrFail($data['purchase_invoice_id']);
+                $this->syncPurchaseInvoicePaymentStatus($pInvoice);
+            }
+
+
+            // 9. Create Accounting Journal Entry
+            $accountantUser = auth()->id() ?? 1;
+            $firstMethod = $paymentLines[0]['payment_method'] ?? 'cash';
+            
+            $cashbox = !empty($data['cashbox_id']) ? Cashbox::find($data['cashbox_id']) : null;
+            $supplier = !empty($data['supplier_id']) ? Supplier::find($data['supplier_id']) : null;
+            $customer = !empty($data['customer_id']) ? Customer::find($data['customer_id']) : null;
+
+            if (in_array($firstMethod, ['bank', 'card', 'transfer'])) {
+                $financialAccount = AccountResolver::getBankAccount();
+            } elseif ($firstMethod === 'cheque') {
+                $financialAccount = AccountResolver::getChequesUnderCollectionAccount();
+            } else {
+                $financialAccount = AccountResolver::getCashboxAccount($cashbox);
+            }
+
+            if ($data['type'] === 'payment') {
+                $supplierAccount = AccountResolver::getSupplierAccount($supplier);
+
+                if ($supplierAccount && $financialAccount) {
+                    $je = \App\Models\JournalEntry::create([
+                        'entry_number' => \App\Models\JournalEntry::generateEntryNumber(),
+                        'entry_date' => $data['payment_date'],
+                        'reference_type' => PaymentVoucher::class,
+                        'reference_id' => $voucher->id,
+                        'description' => "سداد للمورد بموجب سند صرف رقم " . $voucher->voucher_number,
+                        'status' => 'posted',
+                        'posted_by' => $accountantUser,
+                        'posted_at' => now(),
+                    ]);
+
+                    \App\Models\JournalEntryLine::create([
+                        'journal_entry_id' => $je->id,
+                        'account_id' => $supplierAccount->id,
+                        'debit' => $totalAmount,
+                        'credit' => 0,
+                        'description' => "تسديد مستحقات آجل للمورد - سند صرف " . $voucher->voucher_number,
+                    ]);
+
+                    \App\Models\JournalEntryLine::create([
+                        'journal_entry_id' => $je->id,
+                        'account_id' => $financialAccount->id,
+                        'debit' => 0,
+                        'credit' => $totalAmount,
+                        'description' => "صرف المبالغ بموجب سند صرف رقم " . $voucher->voucher_number,
+                    ]);
+                }
+            } elseif ($data['type'] === 'receipt') {
+                $customerAccount = AccountResolver::getCustomerAccount($customer);
+
+
+                if ($customerAccount && $financialAccount) {
+                    $je = \App\Models\JournalEntry::create([
+                        'entry_number' => \App\Models\JournalEntry::generateEntryNumber(),
+                        'entry_date' => $data['payment_date'],
+                        'reference_type' => PaymentVoucher::class,
+                        'reference_id' => $voucher->id,
+                        'description' => "تحصيل من العميل بموجب سند قبض رقم " . $voucher->voucher_number,
+                        'status' => 'posted',
+                        'posted_by' => $accountantUser,
+                        'posted_at' => now(),
+                    ]);
+
+                    \App\Models\JournalEntryLine::create([
+                        'journal_entry_id' => $je->id,
+                        'account_id' => $financialAccount->id,
+                        'debit' => $totalAmount,
+                        'credit' => 0,
+                        'description' => "تحصيل المبالغ - سند قبض " . $voucher->voucher_number,
+                    ]);
+
+                    \App\Models\JournalEntryLine::create([
+                        'journal_entry_id' => $je->id,
+                        'account_id' => $customerAccount->id,
+                        'debit' => 0,
+                        'credit' => $totalAmount,
+                        'description' => "تحصيل مستحقات العميل - سند قبض " . $voucher->voucher_number,
+                    ]);
                 }
             }
 
@@ -163,21 +250,19 @@ class PaymentService
 
             $voucher->update(['status' => 'cancelled']);
 
-            // Recheck Invoice Status
+            // Recheck Sales Invoice Status
             if ($voucher->invoice_id) {
                 $invoice = Invoice::find($voucher->invoice_id);
                 if ($invoice) {
-                    $remainingPaid = PaymentVoucher::where('invoice_id', $invoice->id)
-                        ->where('status', 'completed')
-                        ->sum('amount');
+                    $this->syncInvoicePaymentStatus($invoice);
+                }
+            }
 
-                    if ($remainingPaid >= $invoice->total_amount) {
-                        $invoice->update(['status' => 'paid']);
-                    } elseif ($remainingPaid > 0) {
-                        $invoice->update(['status' => 'partially_paid']);
-                    } else {
-                        $invoice->update(['status' => 'issued']);
-                    }
+            // Recheck Purchase Invoice Status
+            if ($voucher->purchase_invoice_id) {
+                $pInvoice = \App\Models\PurchaseInvoice::find($voucher->purchase_invoice_id);
+                if ($pInvoice) {
+                    $this->syncPurchaseInvoicePaymentStatus($pInvoice);
                 }
             }
 
@@ -188,4 +273,90 @@ class PaymentService
             );
         });
     }
+
+    /**
+     * Recalculate invoice paid amount, due_amount, and status.
+     * Uncollected cheques DO NOT reduce due_amount or mark invoice as paid!
+     */
+    public function syncInvoicePaymentStatus(Invoice $invoice): void
+    {
+        $vouchers = PaymentVoucher::where('invoice_id', $invoice->id)
+            ->whereIn('status', ['posted', 'completed'])
+            ->with(['cheques'])
+            ->get();
+
+        $effectivePaid = 0.0;
+        foreach ($vouchers as $voucher) {
+            if ($voucher->cheques->count() > 0) {
+                foreach ($voucher->cheques as $cheque) {
+                    if ($cheque->status === 'collected') {
+                        $effectivePaid += (float) $cheque->amount;
+                    }
+                }
+            } else {
+                $effectivePaid += (float) $voucher->amount;
+            }
+        }
+
+        $totalAmount = (float) $invoice->total_amount;
+        $dueAmount = max(0, $totalAmount - $effectivePaid);
+
+        $status = 'issued';
+        if ($dueAmount <= 0.001) {
+            $status = 'paid';
+            $dueAmount = 0.00;
+        } elseif ($effectivePaid > 0) {
+            $status = 'partially_paid';
+        }
+
+        $invoice->update([
+            'due_amount' => $dueAmount,
+            'status' => $status,
+        ]);
+    }
+
+    /**
+     * Recalculate purchase invoice paid amount, due_amount, and status.
+     * Uncollected cheques DO NOT reduce due_amount or mark purchase invoice as paid!
+     */
+    public function syncPurchaseInvoicePaymentStatus(\App\Models\PurchaseInvoice $pInvoice): void
+    {
+        $initialPaid = (float) ($pInvoice->cash_amount + $pInvoice->bank_amount);
+
+        $vouchers = PaymentVoucher::where('purchase_invoice_id', $pInvoice->id)
+            ->whereIn('status', ['posted', 'completed'])
+            ->with(['cheques'])
+            ->get();
+
+        $vouchersPaid = 0.0;
+        foreach ($vouchers as $voucher) {
+            if ($voucher->cheques->count() > 0) {
+                foreach ($voucher->cheques as $cheque) {
+                    if ($cheque->status === 'collected') {
+                        $vouchersPaid += (float) $cheque->amount;
+                    }
+                }
+            } else {
+                $vouchersPaid += (float) $voucher->amount;
+            }
+        }
+
+        $totalPaid = $initialPaid + $vouchersPaid;
+        $netAmount = (float) $pInvoice->net_amount;
+        $dueAmount = max(0, $netAmount - $totalPaid);
+
+        $status = 'unpaid';
+        if ($dueAmount <= 0.001) {
+            $status = 'paid';
+            $dueAmount = 0.00;
+        } elseif ($totalPaid > 0) {
+            $status = 'partially_paid';
+        }
+
+        $pInvoice->update([
+            'due_amount' => $dueAmount,
+            'status' => $status,
+        ]);
+    }
 }
+

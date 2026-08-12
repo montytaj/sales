@@ -46,6 +46,7 @@ class RoleAndPermissionSeeder extends Seeder
             'view-signage', 'create-signage', 'edit-signage', 'manage-signage',
             // Inventory, Purchases, Costing & Accounting
             'manage-inventory',
+            'view-warehouse-transfers', 'create-warehouse-transfers', 'approve-warehouse-transfers', 'delete-warehouse-transfers',
             'view-purchases', 'create-purchases', 'manage-purchases',
             'view-costing',
             'view-accounting', 'manage-accounting',
@@ -69,6 +70,14 @@ class RoleAndPermissionSeeder extends Seeder
             'reports.print',
             'reports.view_all_branches',
             'reports.view_sensitive_financial_data',
+            'reports.financial_statements.view',
+            'reports.balance_sheet.view',
+            'reports.income_statement.view',
+            'reports.trial_balance.view',
+            'reports.cash_flow.view',
+            'reports.equity_changes.view',
+            'reports.general_ledger.view',
+            'reports.account_balances.view',
         ];
 
 
@@ -110,7 +119,7 @@ class RoleAndPermissionSeeder extends Seeder
         // Assign Storekeeper permissions
         $storekeeper = Role::findByName('storekeeper', 'web');
         $storekeeper->givePermissionTo([
-            'view-dashboard', 'manage-inventory', 'view-purchases'
+            'view-dashboard', 'manage-inventory', 'view-warehouse-transfers', 'create-warehouse-transfers', 'approve-warehouse-transfers', 'view-purchases'
         ]);
 
         // 4. Assign system-admin role to default admin user

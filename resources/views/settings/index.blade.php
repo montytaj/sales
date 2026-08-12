@@ -554,6 +554,19 @@
                                 </select>
                             </div>
 
+                            <!-- System Start Date -->
+                            <div class="col-12 col-md-6">
+                                <label for="system_start_date" class="form-label font-bold text-slate-800">
+                                    <i class="bi bi-calendar-event text-primary me-1"></i>
+                                    {{ app()->getLocale() == 'ar' ? 'تاريخ بداية العمل بالنظام (تاريخ تأسيس النظام)' : 'System Start Date' }}
+                                </label>
+                                <input type="date" name="system_start_date" id="system_start_date" class="form-control font-mono @error('system_start_date') is-invalid @enderror" value="{{ old('system_start_date', setting('system_start_date', date('Y-m-d'))) }}">
+                                <div class="form-text fs-7 text-muted">
+                                    {{ app()->getLocale() == 'ar' ? 'التاريخ الافتراضي لبداية الفترات في التقارير المالية والتشغيلية (الافتراضي: تاريخ اليوم)' : 'Default start date for system reports (Default: Today)' }}
+                                </div>
+                                @error('system_start_date') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+                            </div>
+
                             <!-- Sales System Mode -->
                             <div class="col-12 col-md-12">
                                 <div class="p-3 bg-slate-50 rounded-4 border">
@@ -570,6 +583,31 @@
                                     </select>
                                     <div class="form-text fs-7 text-muted mt-2">
                                         {{ app()->getLocale() == 'ar' ? 'نمط الكاشير يعرض المنتجات كشبكة بصريات مع أزرار إضافة سريعة وسلة شراء فورية.' : 'POS mode presents items in an interactive visual grid for instant checkout.' }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Database Backup Tool Card -->
+                            <div class="col-12 mt-4">
+                                <div class="card border-0 bg-slate-900 text-white rounded-4 shadow-sm p-3.5 p-md-4">
+                                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                                        <div class="d-flex align-items-center gap-3">
+                                            <div class="rounded-3 bg-white-10 p-3 text-warning">
+                                                <i class="bi bi-database-fill-down fs-2"></i>
+                                            </div>
+                                            <div>
+                                                <h5 class="font-bold text-white mb-1">
+                                                    {{ app()->getLocale() == 'ar' ? 'النسخ الاحتياطي لقاعدة البيانات (Database Backup)' : 'Database Backup Tool' }}
+                                                </h5>
+                                                <p class="text-slate-300 fs-7 mb-0">
+                                                    {{ app()->getLocale() == 'ar' ? 'إنشاء وتنزيل نسخة احتياطية كاملة وشاملة (.sql) لهيكل وقواعد بيانات النظام بضغطة زر واحدة.' : 'Download a complete full SQL backup of the system database to ensure maximum data safety.' }}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <a href="{{ route('settings.backup-download') }}" class="btn btn-warning font-bold rounded-3 px-4 py-2 d-inline-flex align-items-center gap-2 shadow">
+                                            <i class="bi bi-cloud-download-fill fs-6"></i>
+                                            <span>{{ app()->getLocale() == 'ar' ? 'تنزيل نسخة احتياطية فورية (.sql)' : 'Download Instant Backup (.sql)' }}</span>
+                                        </a>
                                     </div>
                                 </div>
                             </div>
@@ -770,6 +808,24 @@
                                     </div>
                                     <div class="form-check form-switch m-0">
                                         <input class="form-check-input fs-4" type="checkbox" name="signage_enabled" value="1" id="signage_enabled" {{ feature_enabled('signage_enabled') ? 'checked' : '' }}>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Quick Actions Shortcuts Module -->
+                            <div class="col-12 col-md-6">
+                                <div class="p-3.5 bg-slate-50 border rounded-4 hover-shadow transition-all d-flex align-items-center justify-content-between gap-3">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="p-2.5 rounded-3 bg-amber-subtle text-amber-600">
+                                            <i class="bi bi-lightning-charge fs-4"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-0 font-bold text-slate-900 fs-7">{{ __('settings.quick_actions_enabled') }}</h6>
+                                            <small class="text-muted fs-8">{{ app()->getLocale() == 'ar' ? 'إظهار شريط أزرار الوصول السريع في الشاشة الرئيسية' : 'Show quick access toolbar on main dashboard' }}</small>
+                                        </div>
+                                    </div>
+                                    <div class="form-check form-switch m-0">
+                                        <input class="form-check-input fs-4" type="checkbox" name="quick_actions_enabled" value="1" id="quick_actions_enabled" {{ feature_enabled('quick_actions_enabled') ? 'checked' : '' }}>
                                     </div>
                                 </div>
                             </div>

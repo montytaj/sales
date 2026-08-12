@@ -68,7 +68,7 @@
                         <tr>
                             <th scope="col" class="ps-3">{{ __('payments.voucher_number') }}</th>
                             <th scope="col">{{ __('payments.voucher_type') }}</th>
-                            <th scope="col">الطرف / العميل / المورد</th>
+                            <th scope="col">الطرف</th>
                             <th scope="col">الخزنة</th>
                             <th scope="col">{{ __('payments.payment_date') }}</th>
                             <th scope="col">{{ __('payments.amount') }}</th>
@@ -98,12 +98,12 @@
                                         <span class="badge bg-danger-subtle text-danger border border-danger">ملغي</span>
                                     @endif
                                 </td>
-                                <td class="text-end pe-3">
-                                    <div class="btn-group btn-group-sm" role="group">
-                                        <a href="{{ route('payments.show', $voucher) }}" class="btn btn-outline-secondary" title="عرض">
+                                <td class="text-end pe-3 text-nowrap">
+                                    <div class="d-inline-flex align-items-center gap-1">
+                                        <a href="{{ route('payments.show', $voucher) }}" class="btn btn-action-icon btn-action-show" title="عرض">
                                             <i class="bi bi-eye"></i>
                                         </a>
-                                        <a href="{{ route('payments.print', $voucher) }}" target="_blank" class="btn btn-outline-dark" title="طباعة الإيصال">
+                                        <a href="{{ route('payments.print', $voucher) }}" target="_blank" class="btn btn-action-icon btn-action-print" title="طباعة الإيصال">
                                             <i class="bi bi-printer"></i>
                                         </a>
                                     </div>

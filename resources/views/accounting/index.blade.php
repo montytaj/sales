@@ -31,7 +31,7 @@
         <!-- Assets Card -->
         <div class="col-12 col-sm-6 col-md-4 col-xl">
             <x-kpi-card 
-                title="الأصول (Assets)" 
+                :title="app()->getLocale() == 'ar' ? 'الأصول' : 'Assets'" 
                 :value="$accountStats['assets']" 
                 currency="حساب" 
                 subtitle="الأصول والموجودات" 
@@ -42,7 +42,7 @@
         <!-- Liabilities Card -->
         <div class="col-12 col-sm-6 col-md-4 col-xl">
             <x-kpi-card 
-                title="الالتزامات (Liabilities)" 
+                :title="app()->getLocale() == 'ar' ? 'الالتزامات' : 'Liabilities'" 
                 :value="$accountStats['liabilities']" 
                 currency="حساب" 
                 subtitle="الخصوم والدائنون" 
@@ -53,7 +53,7 @@
         <!-- Equity Card -->
         <div class="col-12 col-sm-6 col-md-4 col-xl">
             <x-kpi-card 
-                title="حقوق الملكية (Equity)" 
+                :title="app()->getLocale() == 'ar' ? 'حقوق الملكية' : 'Equity'" 
                 :value="$accountStats['equity']" 
                 currency="حساب" 
                 subtitle="رأس المال والأرباح" 
@@ -64,7 +64,7 @@
         <!-- Revenue Card -->
         <div class="col-12 col-sm-6 col-md-4 col-xl">
             <x-kpi-card 
-                title="الإيرادات (Revenue)" 
+                :title="app()->getLocale() == 'ar' ? 'الإيرادات' : 'Revenue'" 
                 :value="$accountStats['revenue']" 
                 currency="حساب" 
                 subtitle="المبيعات والعوائد" 
@@ -75,7 +75,7 @@
         <!-- Expense Card -->
         <div class="col-12 col-sm-6 col-md-4 col-xl">
             <x-kpi-card 
-                title="المصروفات (Expenses)" 
+                :title="app()->getLocale() == 'ar' ? 'المصروفات' : 'Expenses'" 
                 :value="$accountStats['expense']" 
                 currency="حساب" 
                 subtitle="التكاليف والنفقات" 
@@ -90,12 +90,12 @@
             <ul class="nav nav-pills card-header-pills gap-2" id="accountingTabs" role="tablist">
                 <li class="nav-item" role="presentation">
                     <button class="nav-link active font-bold rounded-3 px-3 py-2 fs-7" id="journal-entries-tab" data-bs-toggle="tab" data-bs-target="#journal-entries" type="button" role="tab">
-                        <i class="bi bi-journal-text me-1.5"></i>دفتر القيود اليومية (Journal Entries)
+                        <i class="bi bi-journal-text me-1.5"></i>{{ app()->getLocale() == 'ar' ? 'دفتر القيود اليومية' : 'Journal Entries' }}
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
                     <button class="nav-link font-bold rounded-3 px-3 py-2 fs-7" id="tree-view-tab" data-bs-toggle="tab" data-bs-target="#tree-view" type="button" role="tab">
-                        <i class="bi bi-diagram-3 me-1.5"></i>الشجرة المحاسبية التفاعلية (Chart of Accounts Tree)
+                        <i class="bi bi-diagram-3 me-1.5"></i>{{ app()->getLocale() == 'ar' ? 'الشجرة المحاسبية التفاعلية' : 'Chart of Accounts Tree' }}
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
@@ -150,12 +150,12 @@
                                             <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2.5 py-1.5 rounded-pill">مسودة</span>
                                         @endif
                                     </td>
-                                    <td class="text-end pe-3">
+                                    <td class="text-end pe-3 text-nowrap">
                                         @if ($entry->status !== 'posted')
-                                            <form method="POST" action="{{ route('accounting.post-entry', $entry) }}">
+                                            <form method="POST" action="{{ route('accounting.post-entry', $entry) }}" class="d-inline">
                                                 @csrf
-                                                <button type="submit" class="btn btn-sm btn-outline-success font-semibold rounded-pill px-3">
-                                                    <i class="bi bi-check-all me-1"></i>ترحيل وحظر التعديل
+                                                <button type="submit" class="btn btn-action-icon btn-action-success" title="ترحيل القيد وحظر التعديل">
+                                                    <i class="bi bi-check-all"></i>
                                                 </button>
                                             </form>
                                         @else
@@ -251,19 +251,17 @@
                     <table class="table table-hover align-middle datatable w-100">
                         <thead class="table-light">
                             <tr>
-                                <th scope="col" class="ps-3">رمز الحساب</th>
-                                <th scope="col">اسم الحساب</th>
-                                <th scope="col">تصنيف الحساب</th>
-                                <th scope="col">الحساب الأب</th>
-                                <th scope="col">الرصيد الحقيقي</th>
+                                <th scope="col" class="ps-3">الحساب</th>
+                                <th scope="col">التصنيف</th>
+                                <th scope="col">الأب</th>
+                                <th scope="col">الرصيد</th>
                                 <th scope="col">الحالة</th>
                             </tr>
                         </thead>
                         <tbody>
                             @forelse ($accounts as $acc)
                                 <tr>
-                                    <td class="ps-3"><code class="fs-7 font-bold text-primary">{{ $acc->code }}</code></td>
-                                    <td class="fw-bold text-slate-800 fs-7">{{ $acc->name }}</td>
+                                    <td class="ps-3 fw-bold text-slate-800 fs-7">{{ $acc->name }}</td>
                                     <td><span class="badge bg-slate-100 text-slate-700 border px-2 py-1 fs-8 font-semibold text-uppercase">{{ $acc->type }}</span></td>
                                     <td class="text-slate-600 fs-7">{{ $acc->parent?->name ?? '-' }}</td>
                                     <td class="font-mono font-bold text-slate-900 fs-7">{{ number_format($acc->balance ?? 0, 2) }} {{ setting('currency', 'SAR') }}</td>
@@ -271,7 +269,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="6" class="text-center py-3 text-muted">لا توجد حسابات مسجلة.</td>
+                                    <td colspan="5" class="text-center py-3 text-muted">لا توجد حسابات مسجلة.</td>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -290,7 +288,7 @@
                     @csrf
                     <div class="modal-header bg-slate-900 text-white p-3.5">
                         <h5 class="modal-title font-bold d-flex align-items-center gap-2 fs-6">
-                            <i class="bi bi-journal-plus text-primary fs-4"></i>إضافة قيد يومية مركب (Compound Journal Entry)
+                            <i class="bi bi-journal-plus text-primary fs-4"></i>{{ app()->getLocale() == 'ar' ? 'إضافة قيد يومية مركب' : 'Add Compound Journal Entry' }}
                         </h5>
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                     </div>
@@ -310,7 +308,7 @@
                         <!-- Dynamic Lines Table Header & Live Balance Indicator -->
                         <div class="d-flex align-items-center justify-content-between mb-3">
                             <h6 class="font-bold text-slate-900 mb-0">
-                                <i class="bi bi-list-nested text-primary me-1"></i> تفاصيل وأطراف القيد المركب (Multiple Debits & Credits)
+                                <i class="bi bi-list-nested text-primary me-1"></i> {{ app()->getLocale() == 'ar' ? 'تفاصيل وأطراف القيد المركب' : 'Compound Journal Entry Lines' }}
                             </h6>
                             <div id="entryBalanceIndicator" class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-2 rounded-pill fs-7 font-bold">
                                 <i class="bi bi-exclamation-triangle-fill me-1"></i> غير متوازن (الفارق: 0.00)
@@ -323,8 +321,8 @@
                                 <thead class="table-light fs-7">
                                     <tr>
                                         <th style="width: 35%;">الحساب المعني <span class="text-danger">*</span></th>
-                                        <th style="width: 20%;">مدين (DEBIT)</th>
-                                        <th style="width: 20%;">دائن (CREDIT)</th>
+                                        <th style="width: 20%;">{{ app()->getLocale() == 'ar' ? 'مدين' : 'DEBIT' }}</th>
+                                        <th style="width: 20%;">{{ app()->getLocale() == 'ar' ? 'دائن' : 'CREDIT' }}</th>
                                         <th style="width: 20%;">البيان الفرعي</th>
                                         <th style="width: 5%;" class="text-center">حذف</th>
                                     </tr>
@@ -417,7 +415,7 @@
                     </div>
                     <div class="modal-body p-4">
                         <div class="mb-3">
-                            <label for="acc_code" class="form-label font-semibold fs-7">رمز الحساب (Code) <span class="text-danger">*</span></label>
+                            <label for="acc_code" class="form-label font-semibold fs-7">{{ app()->getLocale() == 'ar' ? 'رمز الحساب' : 'Account Code' }} <span class="text-danger">*</span></label>
                             <input type="text" name="code" id="acc_code" class="form-control fs-7 font-mono" required placeholder="مثال: 1101, 2101...">
                         </div>
                         <div class="mb-3">
@@ -427,11 +425,11 @@
                         <div class="mb-3">
                             <label for="acc_type" class="form-label font-semibold fs-7">تصنيف الحساب <span class="text-danger">*</span></label>
                             <select name="type" id="acc_type" class="form-select fs-7" required>
-                                <option value="asset">أصول (Asset)</option>
-                                <option value="liability">التزامات ودائنون (Liability)</option>
-                                <option value="equity">حقوق ملكية (Equity)</option>
-                                <option value="revenue">إيرادات ومبيعات (Revenue)</option>
-                                <option value="expense">مصروفات وتكاليف (Expense)</option>
+                                <option value="asset">{{ app()->getLocale() == 'ar' ? 'أصول' : 'Assets' }}</option>
+                                <option value="liability">{{ app()->getLocale() == 'ar' ? 'التزامات ودائنون' : 'Liabilities' }}</option>
+                                <option value="equity">{{ app()->getLocale() == 'ar' ? 'حقوق ملكية' : 'Equity' }}</option>
+                                <option value="revenue">{{ app()->getLocale() == 'ar' ? 'إيرادات ومبيعات' : 'Revenue' }}</option>
+                                <option value="expense">{{ app()->getLocale() == 'ar' ? 'مصروفات وتكاليف' : 'Expense' }}</option>
                             </select>
                         </div>
                         <div class="mb-3">

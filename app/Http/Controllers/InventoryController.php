@@ -29,7 +29,7 @@ class InventoryController extends Controller
             return redirect()->route('dashboard')->with('error', 'وحدة المخزون معطلة حالياً في إعدادات النظام.');
         }
 
-        $items = InventoryItem::with(['category', 'movements'])->paginate(15);
+        $items = InventoryItem::with(['category', 'stockMovements', 'warehouseItems'])->paginate(15);
         $warehouses = Warehouse::where('is_active', true)->get();
         $scraps = InventoryScrap::with(['item', 'warehouse'])->where('status', 'available')->get();
 

@@ -17,6 +17,11 @@ class PurchaseInvoice extends Model
         'supplier_id',
         'warehouse_id',
         'payment_type',
+        'cash_amount',
+        'bank_amount',
+        'due_amount',
+        'cash_account_id',
+        'bank_account_id',
         'total_amount',
         'tax_amount',
         'net_amount',
@@ -28,6 +33,9 @@ class PurchaseInvoice extends Model
 
     protected $casts = [
         'invoice_date' => 'date',
+        'cash_amount' => 'float',
+        'bank_amount' => 'float',
+        'due_amount' => 'float',
         'total_amount' => 'float',
         'tax_amount' => 'float',
         'net_amount' => 'float',
@@ -43,6 +51,16 @@ class PurchaseInvoice extends Model
         return $this->belongsTo(Supplier::class);
     }
 
+    public function cashAccount(): BelongsTo
+    {
+        return $this->belongsTo(Account::class, 'cash_account_id');
+    }
+
+    public function bankAccount(): BelongsTo
+    {
+        return $this->belongsTo(Account::class, 'bank_account_id');
+    }
+
     public function warehouse(): BelongsTo
     {
         return $this->belongsTo(Warehouse::class);
@@ -56,6 +74,23 @@ class PurchaseInvoice extends Model
     public function items(): HasMany
     {
         return $this->hasMany(PurchaseInvoiceItem::class);
+    }
+
+    public function payments(): HasMany
+    {
+        return $this->hasMany(PaymentVoucher::class, 'purchase_invoice_id');
+    }
+
+    public function getTotalPaidAttribute(): float
+    {
+        $initialPaid = (float)($this->cash_amount + $this->bank_amount);
+        $vouchersPaid = (float)$this->payments()->where('status', 'completed')->sum('amount');
+        return $initialPaid + $vouchersPaid;
+    }
+
+    public function getRemainingDueAttribute(): float
+    {
+        return max(0, (float)$this->net_amount - $this->total_paid);
     }
 
     public static function generateInvoiceNumber(): string

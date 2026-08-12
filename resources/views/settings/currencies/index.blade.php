@@ -124,26 +124,26 @@
                                         <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2.5 py-1 rounded-pill">{{ app()->getLocale() == 'ar' ? 'معطلة' : 'Disabled' }}</span>
                                     @endif
                                 </td>
-                                <td class="text-end pe-4">
-                                    <div class="d-flex align-items-center justify-content-end gap-1.5">
+                                <td class="text-end pe-4 text-nowrap">
+                                    <div class="d-inline-flex align-items-center justify-content-end gap-1">
                                         @if(!$currency->is_base)
                                             <form action="{{ route('currencies.setBase', $currency) }}" method="POST" class="d-inline">
                                                 @csrf
-                                                <button type="submit" class="btn btn-xs btn-outline-warning rounded-3 px-2 py-1" title="{{ app()->getLocale() == 'ar' ? 'تعيين كعملة رئيسية' : 'Make Base' }}">
-                                                    <i class="bi bi-star me-1"></i>{{ app()->getLocale() == 'ar' ? 'تعيين رئيسية' : 'Set Base' }}
+                                                <button type="submit" class="btn btn-action-icon btn-action-edit" title="تعيين كعملة رئيسية">
+                                                    <i class="bi bi-star"></i>
                                                 </button>
                                             </form>
                                         @endif
 
-                                        <button type="button" class="btn btn-xs btn-outline-primary rounded-3 px-2.5 py-1" data-bs-toggle="modal" data-bs-target="#editCurrencyModal{{ $currency->id }}">
-                                            <i class="bi bi-pencil me-1"></i>{{ app()->getLocale() == 'ar' ? 'تعديل السعر' : 'Edit Rate' }}
+                                        <button type="button" class="btn btn-action-icon btn-action-edit" data-bs-toggle="modal" data-bs-target="#editCurrencyModal{{ $currency->id }}" title="تعديل السعر">
+                                            <i class="bi bi-pencil"></i>
                                         </button>
 
                                         @if(!$currency->is_base)
                                             <form action="{{ route('currencies.destroy', $currency) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ app()->getLocale() == 'ar' ? 'هل أنت تأكد من حذف هذه العملة؟' : 'Are you sure?' }}')">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="btn btn-xs btn-outline-danger rounded-3 px-2 py-1">
+                                                <button type="submit" class="btn btn-action-icon btn-action-delete" title="حذف">
                                                     <i class="bi bi-trash"></i>
                                                 </button>
                                             </form>

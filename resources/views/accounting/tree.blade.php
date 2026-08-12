@@ -137,18 +137,18 @@
                             <div class="col-md-6">
                                 <label class="form-label font-bold text-slate-800">{{ app()->getLocale() == 'ar' ? 'نوع الحساب الرئيسي' : 'Account Type' }}</label>
                                 <select name="type" id="accountTypeSelect" class="form-select" required>
-                                    <option value="asset">{{ app()->getLocale() == 'ar' ? 'أصول (Assets)' : 'Asset' }}</option>
-                                    <option value="liability">{{ app()->getLocale() == 'ar' ? 'خصوم / التزامات (Liabilities)' : 'Liability' }}</option>
-                                    <option value="equity">{{ app()->getLocale() == 'ar' ? 'حقوق ملكية (Equity)' : 'Equity' }}</option>
-                                    <option value="revenue">{{ app()->getLocale() == 'ar' ? 'إيرادات (Revenues)' : 'Revenue' }}</option>
-                                    <option value="expense">{{ app()->getLocale() == 'ar' ? 'مصروفات (Expenses)' : 'Expense' }}</option>
+                                    <option value="asset">{{ app()->getLocale() == 'ar' ? 'أصول' : 'Asset' }}</option>
+                                    <option value="liability">{{ app()->getLocale() == 'ar' ? 'خصوم / التزامات' : 'Liability' }}</option>
+                                    <option value="equity">{{ app()->getLocale() == 'ar' ? 'حقوق ملكية' : 'Equity' }}</option>
+                                    <option value="revenue">{{ app()->getLocale() == 'ar' ? 'إيرادات' : 'Revenue' }}</option>
+                                    <option value="expense">{{ app()->getLocale() == 'ar' ? 'مصروفات' : 'Expense' }}</option>
                                 </select>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label font-bold text-slate-800">{{ app()->getLocale() == 'ar' ? 'طبيعة الحساب المحاسبية' : 'Nature' }}</label>
                                 <select name="nature" id="accountNatureSelect" class="form-select" required>
-                                    <option value="debit">{{ app()->getLocale() == 'ar' ? 'مدين (Debit)' : 'Debit' }}</option>
-                                    <option value="credit">{{ app()->getLocale() == 'ar' ? 'دائن (Credit)' : 'Credit' }}</option>
+                                    <option value="debit">{{ app()->getLocale() == 'ar' ? 'مدين' : 'Debit' }}</option>
+                                    <option value="credit">{{ app()->getLocale() == 'ar' ? 'دائن' : 'Credit' }}</option>
                                 </select>
                             </div>
                             <div class="col-md-6">

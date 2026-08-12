@@ -74,8 +74,18 @@
                         $unreadCount = 0;
                     }
                 @endphp
-                <div class="dropdown">
 
+                <!-- Dark Mode Quick Toggle Button -->
+                <button class="btn btn-sm btn-light border-0 rounded-circle p-2 d-flex align-items-center justify-content-center shadow-xs" 
+                        type="button" 
+                        id="darkModeToggle" 
+                        onclick="toggleDarkMode()" 
+                        title="{{ app()->getLocale() == 'ar' ? 'تبديل الوضع الداكن' : 'Toggle Dark Mode' }}" 
+                        style="width: 38px; height: 38px;">
+                    <i class="bi bi-moon-stars fs-5 text-slate-700" id="darkModeIcon"></i>
+                </button>
+
+                <div class="dropdown">
                     <button class="btn btn-sm btn-light border-0 position-relative rounded-circle p-2 d-flex align-items-center justify-content-center" type="button" id="notificationsDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="width: 38px; height: 38px;">
                         <i class="bi bi-bell fs-5 text-slate-600"></i>
                         @if($unreadCount > 0)
@@ -194,6 +204,13 @@
                     </ul>
                 </div>
             @endauth
+
+            @guest
+                <a href="{{ route('login') }}" class="btn btn-sm btn-primary rounded-pill px-3 py-1.5 font-bold d-flex align-items-center gap-1.5 shadow-sm">
+                    <i class="bi bi-box-arrow-in-right"></i>
+                    <span>{{ app()->getLocale() == 'ar' ? 'تسجيل الدخول' : 'Sign In' }}</span>
+                </a>
+            @endguest
         </div>
     </div>
 </header>

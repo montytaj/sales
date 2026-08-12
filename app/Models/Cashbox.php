@@ -17,6 +17,7 @@ class Cashbox extends Model
         'name_ar',
         'name_en',
         'branch_id',
+        'account_id',
         'opening_balance',
         'current_balance',
         'is_active',
@@ -32,6 +33,12 @@ class Cashbox extends Model
     {
         return $this->belongsTo(Branch::class);
     }
+
+    public function account(): BelongsTo
+    {
+        return $this->belongsTo(Account::class);
+    }
+
 
     public function users(): BelongsToMany
     {

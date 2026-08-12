@@ -28,8 +28,8 @@
                         <div class="mb-3">
                             <label for="type" class="form-label font-semibold">{{ __('payments.voucher_type') }} <span class="text-danger">*</span></label>
                             <select name="type" id="type" class="form-select" required>
-                                <option value="receipt" {{ old('type') === 'receipt' ? 'selected' : '' }}>سند قبض (تحصيل من عميل)</option>
-                                <option value="payment" {{ old('type') === 'payment' ? 'selected' : '' }}>سند صرف (دفع لمورد / مصروفات)</option>
+                                <option value="receipt" {{ old('type', request('type')) === 'receipt' ? 'selected' : '' }}>سند قبض (تحصيل من عميل)</option>
+                                <option value="payment" {{ old('type', request('type', $selectedPurchaseInvoice ? 'payment' : 'receipt')) === 'payment' ? 'selected' : '' }}>سند صرف (دفع لمورد / مصروفات)</option>
                             </select>
                         </div>
 
@@ -46,7 +46,8 @@
                             @error('cashbox_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
 
-                        <div class="mb-3">
+                        <!-- Customer Dropdown (Receipts) -->
+                        <div class="mb-3" id="customerSection">
                             <label for="customer_id" class="form-label font-semibold">{{ __('customers.name') }}</label>
                             <select name="customer_id" id="customer_id" class="form-select">
                                 <option value="">-- اختر العميل --</option>
@@ -58,7 +59,59 @@
                             </select>
                         </div>
 
-                        <div class="mb-3">
+                        <!-- Supplier Dropdown (Payments) -->
+                        <div class="mb-3 d-none" id="supplierSection">
+                            <label for="supplier_id" class="form-label font-semibold">اسم المورد</label>
+                            <select name="supplier_id" id="supplier_id" class="form-select">
+                                <option value="">-- اختر المورد --</option>
+                                @foreach ($suppliers as $supplier)
+                                    <option value="{{ $supplier->id }}" {{ old('supplier_id', $selectedPurchaseInvoice?->supplier_id) == $supplier->id ? 'selected' : '' }}>
+                                        {{ $supplier->name }} ({{ $supplier->phone }})
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <!-- Purchase Invoice Selection (Payments) -->
+                        <div class="mb-3 d-none" id="purchaseInvoiceSection">
+                            <label for="purchase_invoice_id" class="form-label font-semibold">ربط بفاتورة مشتريات (سداد آجل / جزئي)</label>
+                            <select name="purchase_invoice_id" id="purchase_invoice_id" class="form-select">
+                                <option value="">-- بدون ربط بفاتورة (صرف عام للمورد) --</option>
+                                @foreach ($purchaseInvoices as $pinv)
+                                    <option value="{{ $pinv->id }}" 
+                                        data-supplier="{{ $pinv->supplier_id }}"
+                                        data-due="{{ $pinv->due_amount }}"
+                                        data-net="{{ $pinv->net_amount }}"
+                                        data-paid="{{ $pinv->total_paid }}"
+                                        {{ old('purchase_invoice_id', $selectedPurchaseInvoice?->id) == $pinv->id ? 'selected' : '' }}>
+                                        {{ $pinv->invoice_number }} - {{ $pinv->supplier?->name }} (المستحق: {{ number_format($pinv->due_amount, 2) }} {{ setting('currency', 'ر.س') }})
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <!-- Live Calculation Card for Purchase Invoice -->
+                        <div class="p-3 bg-light border border-info rounded mb-3 d-none" id="purchaseCalcBox">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="text-muted small"><i class="bi bi-receipt me-1"></i>صافي الفاتورة الإجمالي:</span>
+                                <strong class="text-dark font-mono" id="calcNet">0.00 {{ setting('currency', 'ر.س') }}</strong>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="text-muted small"><i class="bi bi-check-circle text-success me-1"></i>المدفوع سابقاً:</span>
+                                <strong class="text-success font-mono" id="calcPaid">0.00 {{ setting('currency', 'ر.س') }}</strong>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="text-danger small font-semibold"><i class="bi bi-hourglass-split me-1"></i>المبلغ المستحق حالياً (قبل السداد):</span>
+                                <strong class="text-danger font-mono fs-6" id="calcDue">0.00 {{ setting('currency', 'ر.س') }}</strong>
+                            </div>
+                            <hr class="my-2">
+                            <div class="d-flex justify-content-between align-items-center pt-1">
+                                <span class="text-primary font-semibold small"><i class="bi bi-calculator me-1"></i>المتبقي كدين بعد السداد الحالي:</span>
+                                <strong class="text-primary font-mono fs-6" id="calcRemainingAfter">0.00 {{ setting('currency', 'ر.س') }}</strong>
+                            </div>
+                        </div>
+
+                        <div class="mb-3" id="invoiceSection">
                             <label for="invoice_id" class="form-label font-semibold">ربط بفاتورة مبيعات</label>
                             <select name="invoice_id" id="invoice_id" class="form-select">
                                 <option value="">-- بدون ربط بفاتورة (قبض عام) --</option>
@@ -72,7 +125,7 @@
 
                         <div class="mb-3">
                             <label for="amount" class="form-label font-semibold">{{ __('payments.amount') }} ({{ setting('currency', 'SDG') }}) <span class="text-danger">*</span></label>
-                            <input type="number" step="0.01" name="amount" id="amount" class="form-control form-control-lg fw-bold text-success" value="{{ old('amount', $selectedInvoice?->total_amount ?? '0.00') }}" required>
+                            <input type="number" step="0.01" name="amount" id="amount" class="form-control form-control-lg fw-bold text-success" value="{{ old('amount', $selectedPurchaseInvoice?->due_amount ?? ($selectedInvoice?->total_amount ?? '0.00')) }}" required>
                         </div>
 
                         <div class="mb-3">
@@ -102,10 +155,11 @@
                             <table class="table table-bordered align-middle">
                                 <thead class="table-light">
                                     <tr>
-                                        <th style="width: 35%;">طريقة الدفع</th>
-                                        <th style="width: 30%;">المبلغ ({{ setting('currency', 'SDG') }})</th>
-                                        <th style="width: 25%;">رقم المرجع / العملية</th>
-                                        <th style="width: 10%;"></th>
+                                        <th style="width: 25%;">طريقة الدفع</th>
+                                        <th style="width: 30%;">الحساب الفرعي (شجرة الحسابات)</th>
+                                        <th style="width: 20%;">المبلغ (ر.س)</th>
+                                        <th style="width: 20%;">رقم المرجع / العملية</th>
+                                        <th style="width: 5%;"></th>
                                     </tr>
                                 </thead>
                                 <tbody id="linesContainer">
@@ -163,6 +217,7 @@
             let lineIndex = 0;
 
             const paymentMethods = @json(__('payments.methods'));
+            const accounts = @json($accounts ?? []);
 
             function toggleChequeSection() {
                 const selects = document.querySelectorAll('.payment-method-select');
@@ -179,11 +234,21 @@
             }
 
             function createLineRow(data = {}) {
+                let accountOptions = '<option value="">-- اختر الحساب (اختياري) --</option>';
+                accounts.forEach(acc => {
+                    accountOptions += `<option value="${acc.id}">${acc.name}</option>`;
+                });
+
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td>
                         <select name="lines[${lineIndex}][payment_method]" class="form-select payment-method-select" required>
                             ${Object.entries(paymentMethods).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}
+                        </select>
+                    </td>
+                    <td>
+                        <select name="lines[${lineIndex}][account_id]" class="form-select">
+                            ${accountOptions}
                         </select>
                     </td>
                     <td>
@@ -225,6 +290,127 @@
 
             // Initial row
             createLineRow();
+
+            // Toggle Customer vs Supplier based on Voucher Type (Receipt vs Payment)
+            const typeSelect = document.getElementById('type');
+            const customerSection = document.getElementById('customerSection');
+            const supplierSection = document.getElementById('supplierSection');
+            const invoiceSection = document.getElementById('invoiceSection');
+            const purchaseInvoiceSection = document.getElementById('purchaseInvoiceSection');
+            const purchaseCalcBox = document.getElementById('purchaseCalcBox');
+            const customerSelect = document.getElementById('customer_id');
+            const supplierSelect = document.getElementById('supplier_id');
+            const purchaseInvoiceSelect = document.getElementById('purchase_invoice_id');
+
+            const calcNet = document.getElementById('calcNet');
+            const calcPaid = document.getElementById('calcPaid');
+            const calcDue = document.getElementById('calcDue');
+            const calcRemainingAfter = document.getElementById('calcRemainingAfter');
+
+            function updatePurchaseInvoiceCalc() {
+                if (!purchaseInvoiceSelect || !purchaseInvoiceSelect.value) {
+                    if (purchaseCalcBox) purchaseCalcBox.classList.add('d-none');
+                    return;
+                }
+
+                const opt = purchaseInvoiceSelect.options[purchaseInvoiceSelect.selectedIndex];
+                if (!opt || !opt.dataset.due) {
+                    if (purchaseCalcBox) purchaseCalcBox.classList.add('d-none');
+                    return;
+                }
+
+                const net = parseFloat(opt.dataset.net || 0);
+                const paid = parseFloat(opt.dataset.paid || 0);
+                const due = parseFloat(opt.dataset.due || 0);
+                const currentPay = parseFloat(amountInput.value || 0);
+
+                if (purchaseCalcBox) purchaseCalcBox.classList.remove('d-none');
+                if (calcNet) calcNet.textContent = net.toFixed(2) + ' {{ setting('currency', 'ر.س') }}';
+                if (calcPaid) calcPaid.textContent = paid.toFixed(2) + ' {{ setting('currency', 'ر.س') }}';
+                if (calcDue) calcDue.textContent = due.toFixed(2) + ' {{ setting('currency', 'ر.س') }}';
+
+                const remainingAfter = Math.max(0, due - currentPay);
+                if (calcRemainingAfter) calcRemainingAfter.textContent = remainingAfter.toFixed(2) + ' {{ setting('currency', 'ر.س') }}';
+            }
+
+            function filterPurchaseInvoicesBySupplier() {
+                if (!supplierSelect || !purchaseInvoiceSelect) return;
+                const supId = supplierSelect.value;
+                let firstMatchingDue = null;
+
+                Array.from(purchaseInvoiceSelect.options).forEach(opt => {
+                    if (!opt.value) return; // Keep placeholder
+                    if (!supId || opt.dataset.supplier == supId) {
+                        opt.style.display = '';
+                        if (!firstMatchingDue && opt.dataset.due) {
+                            firstMatchingDue = opt.dataset.due;
+                        }
+                    } else {
+                        opt.style.display = 'none';
+                        if (opt.selected) purchaseInvoiceSelect.value = '';
+                    }
+                });
+            }
+
+            function toggleVoucherType() {
+                const type = typeSelect ? typeSelect.value : 'receipt';
+                if (type === 'payment') {
+                    if (supplierSection) supplierSection.classList.remove('d-none');
+                    if (purchaseInvoiceSection) purchaseInvoiceSection.classList.remove('d-none');
+                    if (customerSection) customerSection.classList.add('d-none');
+                    if (invoiceSection) invoiceSection.classList.add('d-none');
+                    if (customerSelect) customerSelect.value = '';
+                } else if (type === 'receipt') {
+                    if (customerSection) customerSection.classList.remove('d-none');
+                    if (invoiceSection) invoiceSection.classList.remove('d-none');
+                    if (supplierSection) supplierSection.classList.add('d-none');
+                    if (purchaseInvoiceSection) purchaseInvoiceSection.classList.add('d-none');
+                    if (purchaseCalcBox) purchaseCalcBox.classList.add('d-none');
+                    if (supplierSelect) supplierSelect.value = '';
+                    if (purchaseInvoiceSelect) purchaseInvoiceSelect.value = '';
+                } else {
+                    if (customerSection) customerSection.classList.add('d-none');
+                    if (supplierSection) supplierSection.classList.add('d-none');
+                    if (invoiceSection) invoiceSection.classList.add('d-none');
+                    if (purchaseInvoiceSection) purchaseInvoiceSection.classList.add('d-none');
+                    if (purchaseCalcBox) purchaseCalcBox.classList.add('d-none');
+                    if (customerSelect) customerSelect.value = '';
+                    if (supplierSelect) supplierSelect.value = '';
+                    if (purchaseInvoiceSelect) purchaseInvoiceSelect.value = '';
+                }
+            }
+
+            if (typeSelect) {
+                typeSelect.addEventListener('change', toggleVoucherType);
+                toggleVoucherType();
+            }
+
+            if (supplierSelect) {
+                supplierSelect.addEventListener('change', function() {
+                    filterPurchaseInvoicesBySupplier();
+                    updatePurchaseInvoiceCalc();
+                });
+            }
+
+            if (purchaseInvoiceSelect) {
+                purchaseInvoiceSelect.addEventListener('change', function() {
+                    const opt = this.options[this.selectedIndex];
+                    if (opt && opt.dataset.due) {
+                        amountInput.value = parseFloat(opt.dataset.due).toFixed(2);
+                        const firstLineInput = linesContainer.querySelector('.line-amount-input');
+                        if (firstLineInput) firstLineInput.value = amountInput.value;
+                    }
+                    updatePurchaseInvoiceCalc();
+                });
+            }
+
+            amountInput.addEventListener('input', function() {
+                updatePurchaseInvoiceCalc();
+            });
+
+            // Run initial calculations if pre-selected
+            filterPurchaseInvoicesBySupplier();
+            updatePurchaseInvoiceCalc();
         });
     </script>
 </x-app-layout>

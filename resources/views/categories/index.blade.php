@@ -17,10 +17,9 @@
                     <thead class="table-light">
                         <tr>
                             <th>#</th>
-                            <th>كود التصنيف</th>
-                            <th>اسم التصنيف</th>
+                            <th>التصنيف</th>
                             <th>التصنيف الأب</th>
-                            <th>عدد الأصناف</th>
+                            <th>الأصناف</th>
                             <th>الحالة</th>
                             <th>الإجراءات</th>
                         </tr>
@@ -29,7 +28,6 @@
                         @forelse($categories as $category)
                             <tr>
                                 <td>{{ $loop->iteration }}</td>
-                                <td><span class="badge bg-secondary-subtle text-secondary font-mono">{{ $category->code ?? '-' }}</span></td>
                                 <td class="fw-bold text-dark">{{ $category->name }}</td>
                                 <td>
                                     @if($category->parent)
@@ -50,19 +48,22 @@
                                         <span class="badge bg-danger-subtle text-danger">معطل</span>
                                     @endif
                                 </td>
-                                <td>
-                                    <button class="btn btn-sm btn-outline-primary me-1" 
-                                            data-bs-toggle="modal" 
-                                            data-bs-target="#editCategoryModal{{ $category->id }}">
-                                        <i class="bi bi-pencil"></i> تعديل
-                                    </button>
-                                    <form action="{{ route('categories.destroy', $category) }}" method="POST" class="d-inline" onsubmit="return confirm('هل أنت تأكد من حذف هذا التصنيف؟')">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button class="btn btn-sm btn-outline-danger" {{ $category->items_count > 0 ? 'disabled' : '' }}>
-                                            <i class="bi bi-trash"></i> حذف
-                                        </button>
-                                    </form>
+                                 <td class="text-nowrap">
+                                     <div class="d-inline-flex align-items-center gap-1">
+                                         <button type="button" class="btn btn-action-icon btn-action-edit" 
+                                                 data-bs-toggle="modal" 
+                                                 data-bs-target="#editCategoryModal{{ $category->id }}"
+                                                 title="تعديل">
+                                             <i class="bi bi-pencil"></i>
+                                         </button>
+                                         <form action="{{ route('categories.destroy', $category) }}" method="POST" class="d-inline" onsubmit="return confirm('هل أنت تأكد من حذف هذا التصنيف؟')">
+                                             @csrf
+                                             @method('DELETE')
+                                             <button type="submit" class="btn btn-action-icon btn-action-delete" title="حذف" {{ $category->items_count > 0 ? 'disabled' : '' }}>
+                                                 <i class="bi bi-trash"></i>
+                                             </button>
+                                         </form>
+                                     </div>
 
                                     <!-- Modal Edit Category -->
                                     <div class="modal fade" id="editCategoryModal{{ $category->id }}" tabindex="-1">
@@ -116,7 +117,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="text-center text-muted py-4">لا توجد تصنيفات مضافة حالياً.</td>
+                                <td colspan="6" class="text-center text-muted py-4">لا توجد تصنيفات مضافة حالياً.</td>
                             </tr>
                         @endforelse
                     </tbody>

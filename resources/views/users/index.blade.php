@@ -118,14 +118,14 @@
                                         <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2.5 py-1">{{ __('users.inactive') }}</span>
                                     @endif
                                 </td>
-                                <td class="text-end pe-4">
-                                    <div class="btn-group btn-group-sm" role="group">
-                                        <a href="{{ route('users.show', $user) }}" class="btn btn-outline-secondary" title="{{ __('users.show_user') }}">
+                                <td class="text-end pe-4 text-nowrap">
+                                    <div class="d-inline-flex align-items-center gap-1">
+                                        <a href="{{ route('users.show', $user) }}" class="btn btn-action-icon btn-action-show" title="عرض">
                                             <i class="bi bi-eye"></i>
                                         </a>
 
                                         @can('edit-users')
-                                            <a href="{{ route('users.edit', $user) }}" class="btn btn-outline-primary" title="{{ __('users.edit_user') }}">
+                                            <a href="{{ route('users.edit', $user) }}" class="btn btn-action-icon btn-action-edit" title="تعديل">
                                                 <i class="bi bi-pencil"></i>
                                             </a>
                                         @endcan
@@ -135,7 +135,7 @@
                                                 <form method="POST" action="{{ route('users.toggle-status', $user) }}" class="d-inline">
                                                     @csrf
                                                     @method('PATCH')
-                                                    <button type="submit" class="btn btn-outline-{{ $user->is_active ? 'warning' : 'success' }}" title="{{ $user->is_active ? __('users.deactivate') : __('users.activate') }}">
+                                                    <button type="submit" class="btn btn-action-icon {{ $user->is_active ? 'btn-action-delete' : 'btn-action-success' }}" title="{{ $user->is_active ? 'تعطيل' : 'تفعيل' }}">
                                                         <i class="bi bi-power"></i>
                                                     </button>
                                                 </form>

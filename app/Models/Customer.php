@@ -29,6 +29,7 @@ class Customer extends Model
         'is_active',
         'notes',
         'branch_id',
+        'account_id',
     ];
 
     protected $casts = [
@@ -41,6 +42,12 @@ class Customer extends Model
     {
         return $this->belongsTo(Branch::class);
     }
+
+    public function account(): BelongsTo
+    {
+        return $this->belongsTo(Account::class);
+    }
+
 
     public function attachments(): MorphMany
     {

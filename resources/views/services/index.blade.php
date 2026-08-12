@@ -66,8 +66,7 @@
                 <table class="table table-hover align-middle datatable mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th scope="col" class="ps-3">{{ __('services.code') }}</th>
-                            <th scope="col">{{ __('services.name_ar') }}</th>
+                            <th scope="col" class="ps-3">{{ __('services.name_ar') }}</th>
                             <th scope="col">{{ __('services.service_type') }}</th>
                             <th scope="col">{{ __('services.default_price') }}</th>
                             <th scope="col">{{ __('services.unit_of_measure') }}</th>
@@ -79,8 +78,7 @@
                     <tbody>
                         @forelse ($services as $service)
                             <tr>
-                                <td class="ps-3"><code>{{ $service->code }}</code></td>
-                                <td class="fw-semibold">
+                                <td class="ps-3 fw-semibold">
                                     <a href="{{ route('services.show', $service) }}" class="text-decoration-none text-dark hover-primary">
                                         {{ $service->name }}
                                         @if ($service->name_en)
@@ -109,14 +107,14 @@
                                         <span class="badge bg-danger-subtle text-danger border border-danger">{{ __('services.inactive') }}</span>
                                     @endif
                                 </td>
-                                <td class="text-end pe-3">
-                                    <div class="btn-group btn-group-sm" role="group">
-                                        <a href="{{ route('services.show', $service) }}" class="btn btn-outline-secondary" title="{{ __('services.show_service') }}">
+                                <td class="text-end pe-3 text-nowrap">
+                                    <div class="d-inline-flex align-items-center gap-1">
+                                        <a href="{{ route('services.show', $service) }}" class="btn btn-action-icon btn-action-show" title="عرض">
                                             <i class="bi bi-eye"></i>
                                         </a>
 
                                         @can('edit-services')
-                                            <a href="{{ route('services.edit', $service) }}" class="btn btn-outline-primary" title="{{ __('services.edit_service') }}">
+                                            <a href="{{ route('services.edit', $service) }}" class="btn btn-action-icon btn-action-edit" title="تعديل">
                                                 <i class="bi bi-pencil"></i>
                                             </a>
                                         @endcan
@@ -125,7 +123,7 @@
                                             <form method="POST" action="{{ route('services.destroy', $service) }}" class="d-inline" onsubmit="return confirm('هل أنت تأكد من حذف هذه الخدمة؟');">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="btn btn-outline-danger" title="حذف">
+                                                <button type="submit" class="btn btn-action-icon btn-action-delete" title="حذف">
                                                     <i class="bi bi-trash"></i>
                                                 </button>
                                             </form>
@@ -135,7 +133,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="text-center py-4 text-muted">
+                                <td colspan="7" class="text-center py-4 text-muted">
                                     <i class="bi bi-gear-wide-connected fs-3 d-block mb-2"></i>
                                     {{ __('services.no_services_found') }}
                                 </td>

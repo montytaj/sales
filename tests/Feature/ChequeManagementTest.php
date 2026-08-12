@@ -79,4 +79,55 @@ class ChequeManagementTest extends TestCase
         $cheque->refresh();
         $this->assertEquals('returned', $cheque->status);
     }
+
+    public function test_user_can_clear_cheque_and_update_cashbox_balance(): void
+    {
+        $cheque = Cheque::create([
+            'cheque_number' => 'CHK-CLEAR-01',
+            'bank_name' => 'بنك الرياض',
+            'drawer_name' => 'شركة الهدى',
+            'amount' => 3000.00,
+            'issue_date' => now(),
+            'due_date' => now(),
+            'type' => 'incoming',
+            'status' => 'received',
+        ]);
+
+        $initialBalance = $this->cashbox->current_balance;
+
+        $response = $this->actingAs($this->admin)->post("/ar/cheques/{$cheque->id}/clear", [
+            'cashbox_id' => $this->cashbox->id,
+            'clear_date' => date('Y-m-d'),
+            'notes' => 'تم الإيداع بالحساب البنكي',
+        ]);
+
+        $response->assertRedirect();
+        $cheque->refresh();
+        $this->cashbox->refresh();
+
+        $this->assertEquals('collected', $cheque->status);
+        $this->assertEquals($this->cashbox->id, $cheque->cashbox_id);
+        $this->assertEquals($initialBalance + 3000.00, $this->cashbox->current_balance);
+        $this->assertNotNull($cheque->journal_entry_id);
+    }
+
+    public function test_deposit_slip_view(): void
+    {
+        $cheque = Cheque::create([
+            'cheque_number' => 'CHK-SLIP-01',
+            'bank_name' => 'بنك البلاد',
+            'drawer_name' => 'مؤسسة السلام',
+            'amount' => 1500.00,
+            'issue_date' => now(),
+            'due_date' => now(),
+            'type' => 'incoming',
+            'status' => 'received',
+        ]);
+
+        $response = $this->actingAs($this->admin)->get("/ar/cheques/deposit-slip?cheque_ids[]={$cheque->id}");
+        $response->assertStatus(200);
+        $response->assertSee('حافظة إيداع شيكات');
+        $response->assertSee('CHK-SLIP-01');
+        $response->assertSee('1,500.00');
+    }
 }

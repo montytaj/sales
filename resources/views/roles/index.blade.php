@@ -101,17 +101,16 @@
                                 </span>
                             </div>
 
-                            <div class="d-flex align-items-center justify-content-end gap-2">
+                            <div class="d-inline-flex align-items-center justify-content-end gap-1 text-nowrap">
                                 @can('manage-roles')
-                                    <a href="{{ route('roles.edit', $role) }}" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1">
-                                        <i class="bi bi-pencil-square"></i>
-                                        <span>تعديل الصلاحيات</span>
+                                    <a href="{{ route('roles.edit', $role) }}" class="btn btn-action-icon btn-action-edit" title="تعديل الصلاحيات">
+                                        <i class="bi bi-pencil"></i>
                                     </a>
                                     @if (!$isSystemRole)
                                         <form method="POST" action="{{ route('roles.destroy', $role) }}" class="d-inline" onsubmit="return confirm('هل أنت تأكد من رغبتك في حذف هذا الدور الوظيفي؟');">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="حذف الدور">
+                                            <button type="submit" class="btn btn-action-icon btn-action-delete" title="حذف">
                                                 <i class="bi bi-trash"></i>
                                             </button>
                                         </form>

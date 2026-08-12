@@ -88,4 +88,93 @@ class WarehouseController extends Controller
         $warehouse->delete();
         return redirect()->route('warehouses.index')->with('success', 'تم حذف المخزن بنجاح');
     }
+
+    /**
+     * Show opening balances entry screen for a specific warehouse.
+     */
+    public function openingBalances($locale = 'ar', $id)
+    {
+        $warehouse = Warehouse::findOrFail($id);
+        $warehouses = Warehouse::where('is_active', true)->get();
+        $items = \App\Models\InventoryItem::with(['category', 'baseUnit', 'wholesaleUnit'])
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
+
+        $existingStock = WarehouseItem::where('warehouse_id', $warehouse->id)
+            ->pluck('qty_in_base_units', 'inventory_item_id')
+            ->toArray();
+
+        return view('warehouses.opening_balances', compact('warehouse', 'warehouses', 'items', 'existingStock'));
+    }
+
+    /**
+     * Store opening balances for items in a specific warehouse.
+     */
+    public function storeOpeningBalances($locale = 'ar', Request $request, $id)
+    {
+        $warehouse = Warehouse::findOrFail($id);
+
+        $request->validate([
+            'balances' => 'required|array',
+            'balances.*.wholesale_qty' => 'nullable|numeric|min:0',
+            'balances.*.base_qty' => 'nullable|numeric|min:0',
+            'balances.*.cost_price' => 'nullable|numeric|min:0',
+            'balances.*.notes' => 'nullable|string|max:255',
+        ]);
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($request, $warehouse) {
+            foreach ($request->balances as $itemId => $data) {
+                $item = \App\Models\InventoryItem::find($itemId);
+                if (!$item) continue;
+
+                $wholesaleQty = max(0, (float)($data['wholesale_qty'] ?? 0));
+                $baseQty = max(0, (float)($data['base_qty'] ?? 0));
+                $conversionFactor = max(1, (float)($item->conversion_factor ?: 1));
+
+                $totalQtyInBase = ($wholesaleQty * $conversionFactor) + $baseQty;
+
+                // Update cost price if provided
+                if (isset($data['cost_price']) && (float)$data['cost_price'] > 0) {
+                    $item->update([
+                        'cost_price' => (float)$data['cost_price'],
+                        'default_purchase_price' => (float)$data['cost_price'],
+                    ]);
+                }
+
+                $whItem = WarehouseItem::where('warehouse_id', $warehouse->id)
+                    ->where('inventory_item_id', $item->id)
+                    ->first();
+
+                $oldQty = (float)($whItem?->qty_in_base_units ?? 0);
+
+                if ($whItem) {
+                    $whItem->update(['qty_in_base_units' => $totalQtyInBase]);
+                } else if ($totalQtyInBase > 0) {
+                    WarehouseItem::create([
+                        'warehouse_id' => $warehouse->id,
+                        'inventory_item_id' => $item->id,
+                        'qty_in_base_units' => $totalQtyInBase,
+                    ]);
+                }
+
+                // Log movement if quantity changed or created
+                $diff = $totalQtyInBase - $oldQty;
+                if (abs($diff) > 0.0001) {
+                    \App\Models\StockMovement::create([
+                        'warehouse_id' => $warehouse->id,
+                        'item_id' => $item->id,
+                        'movement_type' => $diff > 0 ? 'in' : 'out',
+                        'quantity' => abs($diff),
+                        'reference_type' => 'opening_balance',
+                        'notes' => !empty($data['notes']) ? $data['notes'] : "تسوية بضاعة أول المدة للمخزن ({$warehouse->name})",
+                        'created_by' => auth()->id() ?? 1,
+                    ]);
+                }
+            }
+        });
+
+        return redirect()->route('warehouses.show', ['warehouse' => $warehouse->id])
+            ->with('success', "تم حفظ وتسوية بضاعة أول المدة لمخزن ({$warehouse->name}) بنجاح.");
+    }
 }

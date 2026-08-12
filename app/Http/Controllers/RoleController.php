@@ -252,7 +252,7 @@ class RoleController extends Controller
             'finance' => ['view-cashboxes', 'create-cashboxes', 'edit-cashboxes', 'manage-cashbox-shifts', 'view-payment-vouchers', 'create-payment-vouchers', 'cancel-payment-vouchers', 'print-payment-receipts', 'view-cheques', 'manage-cheques', 'view-costing', 'view-accounting', 'manage-accounting'],
             'workshop' => ['view-work-orders', 'create-work-orders', 'edit-work-orders', 'authorize-work-order-start', 'override-work-order-start', 'execute-work-orders', 'deliver-work-orders'],
             'projects' => ['view-surveys', 'create-surveys', 'edit-surveys', 'view-contracts', 'create-contracts', 'edit-contracts', 'approve-contracts', 'view-projects', 'create-projects', 'edit-projects', 'manage-projects', 'view-signage', 'create-signage', 'edit-signage', 'manage-signage'],
-            'inventory_purchases' => ['manage-inventory', 'view-purchases', 'create-purchases', 'manage-purchases'],
+            'inventory_purchases' => ['manage-inventory', 'view-warehouse-transfers', 'create-warehouse-transfers', 'approve-warehouse-transfers', 'delete-warehouse-transfers', 'view-purchases', 'create-purchases', 'manage-purchases'],
             'reports' => ['reports.access', 'reports.sales.view', 'reports.financial.view', 'reports.customers.view', 'reports.suppliers.view', 'reports.workshop.view', 'reports.cnc.view', 'reports.projects.view', 'reports.signage.view', 'reports.inventory.view', 'reports.purchases.view', 'reports.accounting.view', 'reports.profitability.view', 'reports.costs.view', 'reports.export_excel', 'reports.export_pdf', 'reports.print', 'reports.view_all_branches', 'reports.view_sensitive_financial_data'],
         ];
 

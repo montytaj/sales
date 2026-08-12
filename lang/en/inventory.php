@@ -22,4 +22,21 @@ return [
     'uncategorized' => 'Uncategorized',
     'piece' => 'Piece',
     'carton' => 'Carton',
+    'item_card' => 'Item Card',
+    'movement_types' => [
+        'in' => 'Inbound (+ Stock)',
+        'out' => 'Outbound (- Stock)',
+        'transfer' => 'Warehouse Transfer',
+    ],
+    'reference_types' => [
+        'sales_invoice' => 'Sales Invoice',
+        'purchase_invoice' => 'Purchase Invoice',
+        'warehouse_transfer' => 'Warehouse Transfer',
+        'opening_balance' => 'Opening Balance',
+        'adjustment' => 'Stock Adjustment',
+        'unnamed' => 'Unnamed',
+        'ie' => 'i.e.',
+        'and' => 'and',
+        'system' => 'System',
+    ],
 ];

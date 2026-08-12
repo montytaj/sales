@@ -49,7 +49,6 @@
                     <thead class="table-light">
                         <tr>
                             <th scope="col" class="ps-3">#</th>
-                            <th scope="col">{{ __('branches.code') }}</th>
                             <th scope="col">{{ __('branches.name') }}</th>
                             <th scope="col">{{ __('branches.phone') }}</th>
                             <th scope="col">{{ __('branches.is_main') }}</th>
@@ -61,7 +60,6 @@
                         @forelse ($branches as $branch)
                             <tr>
                                 <th scope="row" class="ps-3">{{ $branch->id }}</th>
-                                <td><code>{{ $branch->code }}</code></td>
                                 <td class="fw-semibold">
                                     <a href="{{ route('branches.show', $branch) }}" class="text-decoration-none text-dark hover-primary">
                                         {{ $branch->name }}
@@ -84,14 +82,14 @@
                                         <span class="badge bg-danger-subtle text-danger border border-danger">{{ __('branches.inactive') }}</span>
                                     @endif
                                 </td>
-                                <td class="text-end pe-3">
-                                    <div class="btn-group btn-group-sm" role="group">
-                                        <a href="{{ route('branches.show', $branch) }}" class="btn btn-outline-secondary" title="{{ __('branches.show_branch') }}">
+                                <td class="text-end pe-3 text-nowrap">
+                                    <div class="d-inline-flex align-items-center gap-1">
+                                        <a href="{{ route('branches.show', $branch) }}" class="btn btn-action-icon btn-action-show" title="عرض">
                                             <i class="bi bi-eye"></i>
                                         </a>
 
                                         @can('edit-branches')
-                                            <a href="{{ route('branches.edit', $branch) }}" class="btn btn-outline-primary" title="{{ __('branches.edit_branch') }}">
+                                            <a href="{{ route('branches.edit', $branch) }}" class="btn btn-action-icon btn-action-edit" title="تعديل">
                                                 <i class="bi bi-pencil"></i>
                                             </a>
                                         @endcan
@@ -101,7 +99,7 @@
                                                 <form method="POST" action="{{ route('branches.toggle-status', $branch) }}" class="d-inline">
                                                     @csrf
                                                     @method('PATCH')
-                                                    <button type="submit" class="btn btn-outline-{{ $branch->is_active ? 'warning' : 'success' }}" title="{{ $branch->is_active ? __('branches.inactive') : __('branches.active') }}">
+                                                    <button type="submit" class="btn btn-action-icon {{ $branch->is_active ? 'btn-action-delete' : 'btn-action-success' }}" title="{{ $branch->is_active ? 'تعطيل' : 'تفعيل' }}">
                                                         <i class="bi bi-power"></i>
                                                     </button>
                                                 </form>
@@ -112,7 +110,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="text-center py-4 text-muted">
+                                <td colspan="6" class="text-center py-4 text-muted">
                                     <i class="bi bi-building-exclamation fs-3 d-block mb-2"></i>
                                     {{ __('branches.no_branches_found') }}
                                 </td>

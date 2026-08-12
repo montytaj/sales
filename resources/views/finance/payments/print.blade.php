@@ -62,7 +62,7 @@
         <!-- Info Grid -->
         <div class="row g-3 mb-4">
             <div class="col-6">
-                <p class="mb-1"><strong>استلمنا من السيد / المنشأة:</strong> {{ $voucher->customer?->name ?? ($voucher->supplier?->name ?? 'تحويل داخلي') }}</p>
+                <p class="mb-1"><strong>{{ $voucher->type === 'payment' ? 'صرفنا إلى السيد / المنشأة:' : 'استلمنا من السيد / المنشأة:' }}</strong> {{ $voucher->customer?->name ?? ($voucher->supplier?->name ?? 'تحويل داخلي') }}</p>
                 <p class="mb-1"><strong>مبلغ وقدره:</strong> <span class="fs-5 font-bold text-success">{{ number_format($voucher->amount, 2) }} {{ setting('currency', 'SDG') }}</span></p>
                 <p class="mb-0"><strong>وذلك عن:</strong> {{ $voucher->notes ?? 'سداد مستحقات مالية' }}</p>
             </div>

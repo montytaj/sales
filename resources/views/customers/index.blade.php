@@ -33,8 +33,7 @@
             <table class="table table-hover align-middle datatable mb-0">
                 <thead class="bg-slate-50 border-bottom border-slate-200">
                     <tr>
-                        <th scope="col" class="ps-3 text-slate-600 font-semibold fs-7">{{ __('customers.code') }}</th>
-                        <th scope="col" class="text-slate-600 font-semibold fs-7">{{ __('customers.name') }}</th>
+                        <th scope="col" class="ps-3 text-slate-600 font-semibold fs-7">{{ __('customers.name') }}</th>
                         <th scope="col" class="text-slate-600 font-semibold fs-7">{{ __('customers.type') }}</th>
                         <th scope="col" class="text-slate-600 font-semibold fs-7">{{ __('customers.phone') }}</th>
                         <th scope="col" class="text-slate-600 font-semibold fs-7">{{ __('customers.category') }}</th>
@@ -47,9 +46,6 @@
                     @forelse ($customers as $customer)
                         <tr>
                             <td class="ps-3">
-                                <span class="badge bg-slate-100 text-slate-700 font-mono fs-7">{{ $customer->code }}</span>
-                            </td>
-                            <td>
                                 <a href="{{ route('customers.show', $customer) }}" class="font-bold text-slate-900 text-decoration-none hover-primary">
                                     {{ $customer->name }}
                                 </a>
@@ -81,46 +77,31 @@
                             <td>
                                 <x-status-badge :status="$customer->is_active ? 'active' : 'inactive'" />
                             </td>
-                            <td class="text-end pe-3">
-                                <div class="dropdown">
-                                    <button class="btn btn-sm btn-light border-0 px-2 py-1" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                        <i class="bi bi-three-dots-vertical text-muted fs-6"></i>
-                                    </button>
-                                    <ul class="dropdown-menu dropdown-menu-end shadow-md border-0 rounded-lg p-1">
-                                        <li>
-                                            <a class="dropdown-item d-flex align-items-center gap-2 py-1.5 fs-7 rounded-md" href="{{ route('customers.show', $customer) }}">
-                                                <i class="bi bi-eye text-primary"></i>
-                                                <span>{{ __('customers.show_customer') }}</span>
-                                            </a>
-                                        </li>
-                                        @can('edit-customers')
-                                            <li>
-                                                <a class="dropdown-item d-flex align-items-center gap-2 py-1.5 fs-7 rounded-md" href="{{ route('customers.edit', $customer) }}">
-                                                    <i class="bi bi-pencil text-warning"></i>
-                                                    <span>{{ __('customers.edit_customer') }}</span>
-                                                </a>
-                                            </li>
-                                        @endcan
-                                        @can('delete-customers')
-                                            <li><hr class="dropdown-divider my-1"></li>
-                                            <li>
-                                                <form method="POST" action="{{ route('customers.destroy', $customer) }}" onsubmit="return confirm('هل أنت تأكد من رغبتك في حذف هذا العميل؟');">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" class="dropdown-item d-flex align-items-center gap-2 py-1.5 fs-7 rounded-md text-danger">
-                                                        <i class="bi bi-trash"></i>
-                                                        <span>{{ __('general.delete') ?? 'حذف' }}</span>
-                                                    </button>
-                                                </form>
-                                            </li>
-                                        @endcan
-                                    </ul>
+                            <td class="text-end pe-3 text-nowrap">
+                                <div class="d-inline-flex align-items-center gap-1">
+                                    <a href="{{ route('customers.show', $customer) }}" class="btn btn-action-icon btn-action-show" title="عرض">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    @can('edit-customers')
+                                        <a href="{{ route('customers.edit', $customer) }}" class="btn btn-action-icon btn-action-edit" title="تعديل">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                    @endcan
+                                    @can('delete-customers')
+                                        <form method="POST" action="{{ route('customers.destroy', $customer) }}" class="d-inline" onsubmit="return confirm('هل أنت تأكد من رغبتك في حذف هذا العميل؟');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-action-icon btn-action-delete" title="حذف">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    @endcan
                                 </div>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="p-0">
+                            <td colspan="7" class="p-0">
                                 <x-empty-state 
                                     icon="bi-person-vcard" 
                                     :title="__('customers.no_customers_found') ?? 'لا يوجد عملاء مطابقين'" 

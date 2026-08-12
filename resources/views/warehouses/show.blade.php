@@ -4,9 +4,14 @@
             <h2 class="h4 mb-0 font-bold text-gray-800">
                 <i class="bi bi-box-seam text-primary me-2"></i>مخزون المخزن: {{ $warehouse->name }}
             </h2>
-            <a href="{{ route('warehouses.index') }}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-right me-1"></i>الرجوع للمخازن
-            </a>
+            <div class="d-flex align-items-center gap-2">
+                <a href="{{ route('warehouses.opening-balances', $warehouse) }}" class="btn btn-primary font-semibold rounded-3">
+                    <i class="bi bi-box-arrow-in-down-left me-1"></i>أرصدة أول المدة
+                </a>
+                <a href="{{ route('warehouses.index') }}" class="btn btn-outline-secondary font-semibold rounded-3">
+                    <i class="bi bi-arrow-right me-1"></i>الرجوع للمخازن
+                </a>
+            </div>
         </div>
     </x-slot>
 
@@ -49,8 +54,7 @@
                     <thead class="table-light">
                         <tr>
                             <th>#</th>
-                            <th>كود الصنف</th>
-                            <th>اسم الصنف</th>
+                            <th>الصنف</th>
                             <th>التصنيف</th>
                             <th>الكمية بالوحدة الصغرى</th>
                             <th>الكمية المعروضة (جملة + فرادي)</th>
@@ -63,7 +67,6 @@
                             @php $item = $wItem->item; @endphp
                             <tr>
                                 <td>{{ $loop->iteration }}</td>
-                                <td><span class="badge bg-secondary-subtle text-secondary font-mono">{{ $item?->code ?? $item?->item_code ?? '-' }}</span></td>
                                 <td class="fw-bold text-dark">{{ $item?->name ?? '-' }}</td>
                                 <td><span class="badge bg-info-subtle text-info">{{ $item?->category?->name ?? '-' }}</span></td>
                                 <td class="fw-bold text-primary fs-6">{{ number_format($wItem->qty_in_base_units, 2) }} {{ $item?->baseUnit?->name ?? 'قطعة' }}</td>
@@ -86,7 +89,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="text-center text-muted py-4">لا توجد أصناف في هذا المخزن حالياً.</td>
+                                <td colspan="7" class="text-center text-muted py-4">لا توجد أصناف في هذا المخزن حالياً.</td>
                             </tr>
                         @endforelse
                     </tbody>

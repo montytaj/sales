@@ -29,9 +29,9 @@
                         <tr>
                             <th scope="col" class="ps-3">رقم المعاينة</th>
                             <th scope="col">{{ __('customers.name') }}</th>
-                            <th scope="col">عنوان الموقع</th>
-                            <th scope="col">المعاين المسؤول</th>
-                            <th scope="col">تاريخ المعاينة</th>
+                            <th scope="col">الموقع</th>
+                            <th scope="col">المعاين</th>
+                            <th scope="col">التاريخ</th>
                             <th scope="col">الحالة</th>
                             <th scope="col" class="text-end pe-3">الإجراءات</th>
                         </tr>
@@ -45,10 +45,12 @@
                                 <td>{{ $survey->assignee?->name ?? 'غير محدد' }}</td>
                                 <td>{{ $survey->survey_date->format('Y-m-d') }}</td>
                                 <td><span class="badge bg-primary">{{ $survey->status }}</span></td>
-                                <td class="text-end pe-3">
-                                    <a href="{{ route('site-surveys.show', $survey) }}" class="btn btn-sm btn-outline-secondary">
-                                        <i class="bi bi-eye me-1"></i>عرض التفاصيل
-                                    </a>
+                                <td class="text-end pe-3 text-nowrap">
+                                    <div class="d-inline-flex align-items-center justify-content-end gap-1">
+                                        <a href="{{ route('site-surveys.show', $survey) }}" class="btn btn-action-icon btn-action-show" title="عرض التفاصيل">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                    </div>
                                 </td>
                             </tr>
                         @empty

@@ -78,7 +78,16 @@
                     <tbody>
                         @forelse ($quotations as $quotation)
                             <tr>
-                                <td class="ps-3"><code>{{ $quotation->quotation_number }}</code></td>
+                                <td class="ps-3">
+                                    <code>{{ $quotation->quotation_number }}</code>
+                                    @if($quotation->invoice)
+                                        <div class="mt-1">
+                                            <a href="{{ route('invoices.show', $quotation->invoice) }}" class="badge bg-success-subtle text-success border border-success-subtle text-decoration-none fs-8" title="عرض الفاتورة الصادرة">
+                                                <i class="bi bi-receipt me-1"></i>فاتورة: {{ $quotation->invoice->invoice_number }}
+                                            </a>
+                                        </div>
+                                    @endif
+                                </td>
                                 <td class="fw-semibold">
                                     <a href="{{ route('quotations.show', $quotation) }}" class="text-decoration-none text-dark hover-primary">
                                         {{ $quotation->customer->name }}
@@ -98,17 +107,17 @@
                                         <span class="badge bg-warning-subtle text-warning border border-warning"><i class="bi bi-clock me-1"></i>{{ __('sales.not_approved') }}</span>
                                     @endif
                                 </td>
-                                <td class="text-end pe-3">
-                                    <div class="btn-group btn-group-sm" role="group">
-                                        <a href="{{ route('quotations.show', $quotation) }}" class="btn btn-outline-secondary" title="عرض">
+                                <td class="text-end pe-3 text-nowrap">
+                                    <div class="d-inline-flex align-items-center gap-1">
+                                        <a href="{{ route('quotations.show', $quotation) }}" class="btn btn-action-icon btn-action-show" title="عرض">
                                             <i class="bi bi-eye"></i>
                                         </a>
-                                        <a href="{{ route('quotations.print', $quotation) }}" target="_blank" class="btn btn-outline-dark" title="طباعة">
+                                        <a href="{{ route('quotations.print', $quotation) }}" target="_blank" class="btn btn-action-icon btn-action-print" title="طباعة">
                                             <i class="bi bi-printer"></i>
                                         </a>
 
                                         @can('edit-quotations')
-                                            <a href="{{ route('quotations.edit', $quotation) }}" class="btn btn-outline-primary" title="تعديل">
+                                            <a href="{{ route('quotations.edit', $quotation) }}" class="btn btn-action-icon btn-action-edit" title="تعديل">
                                                 <i class="bi bi-pencil"></i>
                                             </a>
                                         @endcan

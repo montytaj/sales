@@ -107,7 +107,7 @@ return new class extends Migration
             $table->decimal('total_amount', 15, 2)->default(0.00);
             $table->decimal('tax_amount', 15, 2)->default(0.00);
             $table->decimal('net_amount', 15, 2)->default(0.00);
-            $table->enum('status', ['unpaid', 'partially_paid', 'paid', 'cancelled'])->default('unpaid');
+            $table->string('status', 50)->default('draft');
             $table->date('invoice_date');
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();

@@ -56,7 +56,7 @@ class SalesQuotationTest extends TestCase
             ]
         ]);
 
-        $quotation = Quotation::latest()->first();
+        $quotation = Quotation::orderBy('id', 'desc')->first();
         $this->assertNotNull($quotation);
         $this->assertEquals(950.00, $quotation->subtotal);
         $this->assertEquals(50.00, $quotation->discount_amount);

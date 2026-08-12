@@ -6,10 +6,12 @@ use App\Models\Customer;
 use App\Models\Branch;
 use App\Models\Attachment;
 use App\Models\ActivityLog;
+use App\Http\Requests\StoreCustomerRequest;
+use App\Http\Requests\UpdateCustomerRequest;
+use App\Http\Requests\UploadCustomerAttachmentRequest;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+
 
 class CustomerController extends Controller
 {
@@ -74,29 +76,11 @@ class CustomerController extends Controller
         return view('customers.create', compact('branches'));
     }
 
-    public function store(Request $request)
+    public function store(StoreCustomerRequest $request)
     {
         $this->authorize('create-customers');
 
-        $validated = $request->validate([
-            'type' => ['required', 'in:individual,company'],
-            'name' => ['required', 'string', 'max:255'],
-            'company_name' => ['nullable', 'string', 'max:255'],
-            'phone' => ['required', 'string', 'max:50'],
-            'phone_secondary' => ['nullable', 'string', 'max:50'],
-            'email' => ['nullable', 'string', 'email', 'max:255'],
-            'address' => ['nullable', 'string', 'max:255'],
-            'city' => ['nullable', 'string', 'max:100'],
-            'cr_number' => ['nullable', 'string', 'max:50'],
-            'vat_number' => ['nullable', 'string', 'max:50'],
-            'credit_limit' => ['required', 'numeric', 'min:0'],
-            'credit_period_days' => ['required', 'integer', 'min:0'],
-            'category' => ['required', 'in:regular,vip,corporate,wholesale'],
-            'is_active' => ['boolean'],
-            'notes' => ['nullable', 'string'],
-            'branch_id' => ['nullable', 'exists:branches,id'],
-            'attachment' => ['nullable', 'file', 'max:10240'], // Max 10MB
-        ]);
+        $validated = $request->validated();
 
         // Duplicate check warning validation for Phone / VAT
         if (!empty($validated['phone']) && Customer::where('phone', $validated['phone'])->exists()) {
@@ -168,28 +152,11 @@ class CustomerController extends Controller
         return view('customers.edit', compact('customer', 'branches'));
     }
 
-    public function update(Request $request, $locale, Customer $customer)
+    public function update(UpdateCustomerRequest $request, $locale, Customer $customer)
     {
         $this->authorize('edit-customers');
 
-        $validated = $request->validate([
-            'type' => ['required', 'in:individual,company'],
-            'name' => ['required', 'string', 'max:255'],
-            'company_name' => ['nullable', 'string', 'max:255'],
-            'phone' => ['required', 'string', 'max:50'],
-            'phone_secondary' => ['nullable', 'string', 'max:50'],
-            'email' => ['nullable', 'string', 'email', 'max:255'],
-            'address' => ['nullable', 'string', 'max:255'],
-            'city' => ['nullable', 'string', 'max:100'],
-            'cr_number' => ['nullable', 'string', 'max:50'],
-            'vat_number' => ['nullable', 'string', 'max:50'],
-            'credit_limit' => ['required', 'numeric', 'min:0'],
-            'credit_period_days' => ['required', 'integer', 'min:0'],
-            'category' => ['required', 'in:regular,vip,corporate,wholesale'],
-            'is_active' => ['boolean'],
-            'notes' => ['nullable', 'string'],
-            'branch_id' => ['nullable', 'exists:branches,id'],
-        ]);
+        $validated = $request->validated();
 
         $customer->update([
             'type' => $validated['type'],
@@ -234,13 +201,9 @@ class CustomerController extends Controller
         return redirect()->route('customers.index')->with('success', __('customers.deleted_successfully'));
     }
 
-    public function uploadAttachment(Request $request, $locale, Customer $customer)
+    public function uploadAttachment(UploadCustomerAttachmentRequest $request, $locale, Customer $customer)
     {
         $this->authorize('edit-customers');
-
-        $request->validate([
-            'attachment' => ['required', 'file', 'max:10240'],
-        ]);
 
         $file = $request->file('attachment');
         $path = $file->store('attachments/customers', 'public');

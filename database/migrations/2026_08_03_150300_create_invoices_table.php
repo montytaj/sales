@@ -17,7 +17,7 @@ return new class extends Migration
             $table->foreignId('quotation_id')->nullable()->constrained('quotations')->nullOnDelete();
             $table->foreignId('customer_id')->constrained('customers')->cascadeOnDelete();
             $table->foreignId('branch_id')->nullable()->constrained('branches')->nullOnDelete();
-            $table->enum('status', ['draft', 'issued', 'partially_paid', 'paid', 'overdue', 'cancelled'])->default('draft');
+            $table->string('status', 50)->default('draft');
             $table->date('issue_date');
             $table->date('due_date')->nullable();
             $table->decimal('subtotal', 15, 2)->default(0.00);

@@ -27,11 +27,53 @@
         </div>
     </x-slot>
 
+    <style>
+        .matrix-table-wrapper {
+            max-height: 70vh;
+            overflow-y: auto;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior-x: contain;
+        }
+        .matrix-sticky-col {
+            position: sticky;
+            right: 0;
+            background-color: #ffffff !important;
+            z-index: 5;
+            box-shadow: -2px 0 5px rgba(0,0,0,0.05);
+        }
+        html[dir="ltr"] .matrix-sticky-col {
+            right: auto;
+            left: 0;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.05);
+        }
+        .matrix-col-head {
+            min-width: 260px;
+        }
+        @media (max-width: 575.98px) {
+            .matrix-col-head {
+                min-width: 170px !important;
+                max-width: 180px !important;
+            }
+            .matrix-sticky-col {
+                max-width: 180px !important;
+                font-size: 0.8rem;
+                padding-left: 0.5rem !important;
+                padding-right: 0.5rem !important;
+            }
+            .matrix-cb {
+                width: 1.25rem;
+                height: 1.25rem;
+                cursor: pointer;
+            }
+        }
+    </style>
+
     <form method="POST" action="{{ route('roles.matrix.update') }}" id="matrixForm">
         @csrf
 
         <!-- Matrix Header Sticky Bar -->
-        <div class="card border-0 shadow-sm mb-4 rounded-3 bg-white sticky-top shadow-md" style="top: 75px; z-index: 1020;">
+        <div class="card border-0 shadow-sm mb-4 rounded-3 bg-white sticky-top shadow-md" style="top: 70px; z-index: 1020;">
             <div class="card-body p-3 d-flex flex-column flex-md-row align-items-center justify-content-between gap-3">
                 <div class="d-flex align-items-center gap-3">
                     <span class="badge bg-primary-subtle text-primary p-2 rounded-circle fs-6">
@@ -39,20 +81,20 @@
                     </span>
                     <div>
                         <h6 class="fw-bold text-dark mb-0">لوحة التحكم السريعة بالمصفوفة</h6>
-                        <span class="text-muted fs-7">قم بزيادة أو إزالة الصلاحيات لكل دور بالضغط المباشر على مربع الاختيار ثم اضغط حفظ.</span>
+                        <span class="text-muted fs-7 d-none d-sm-inline">قم بزيادة أو إزالة الصلاحيات لكل دور بالضغط المباشر على مربع الاختيار ثم اضغط حفظ.</span>
                     </div>
                 </div>
 
-                <div class="d-flex align-items-center gap-2 w-100 w-md-auto justify-content-end">
-                    <button type="button" class="btn btn-outline-primary py-2 px-3 fw-semibold d-inline-flex align-items-center gap-1" id="btnSelectAllMatrix">
+                <div class="d-flex align-items-center gap-2 w-100 w-md-auto justify-content-end flex-wrap">
+                    <button type="button" class="btn btn-sm btn-outline-primary py-2 px-3 fw-semibold d-inline-flex align-items-center gap-1" id="btnSelectAllMatrix">
                         <i class="bi bi-check-all fs-5"></i>
                         <span>تحديد كافة المصفوفة</span>
                     </button>
-                    <button type="button" class="btn btn-outline-secondary py-2 px-3 fw-semibold d-inline-flex align-items-center gap-1" id="btnDeselectAllMatrix">
+                    <button type="button" class="btn btn-sm btn-outline-secondary py-2 px-3 fw-semibold d-inline-flex align-items-center gap-1" id="btnDeselectAllMatrix">
                         <i class="bi bi-x-lg fs-6"></i>
-                        <span>إلغاء تحديد الكلي</span>
+                        <span>إلغاء التحديد</span>
                     </button>
-                    <button type="submit" class="btn btn-primary px-4 py-2 font-bold d-inline-flex align-items-center gap-2 shadow-sm">
+                    <button type="submit" class="btn btn-primary px-4 py-2 font-bold d-inline-flex align-items-center gap-2 shadow-sm ms-auto">
                         <i class="bi bi-floppy-fill fs-5"></i>
                         <span>{{ __('roles.save_matrix') }}</span>
                     </button>
@@ -63,13 +105,16 @@
         <!-- Role Permissions Matrix Table -->
         <div class="card card-custom border-0 shadow-sm mb-5">
             <div class="card-body p-0">
-                <div class="table-responsive" style="max-height: 70vh; overflow-y: auto;">
+                <div class="bg-light p-2 text-center text-muted fs-8 d-block d-md-none border-bottom">
+                    <i class="bi bi-arrows-left-right me-1"></i>يمكنك السحب أفقياً لعرض باقي الأدوار والصلاحيات
+                </div>
+                <div class="table-responsive matrix-table-wrapper">
                     <table class="table table-bordered table-hover align-middle mb-0 matrix-table">
                         <thead class="bg-dark text-white sticky-top" style="top: 0; z-index: 10;">
                             <tr>
-                                <th scope="col" class="bg-dark text-white p-3 align-middle" style="min-width: 300px; position: sticky; right: 0; z-index: 11;">
+                                <th scope="col" class="bg-dark text-white p-3 align-middle matrix-sticky-col matrix-col-head" style="z-index: 11;">
                                     <div class="d-flex align-items-center justify-content-between">
-                                        <span>الصلاحية / الموديول الوظيفي</span>
+                                        <span>الصلاحية / الموديول</span>
                                         <i class="bi bi-key-fill text-warning fs-5"></i>
                                     </div>
                                 </th>
@@ -77,7 +122,7 @@
                                     @php
                                         $roleDisplayName = Lang::has('roles.' . $role->name) ? __('roles.' . $role->name) : $role->name;
                                     @endphp
-                                    <th scope="col" class="bg-dark text-white text-center p-3 align-middle" style="min-width: 140px;">
+                                    <th scope="col" class="bg-dark text-white text-center p-3 align-middle" style="min-width: 130px;">
                                         <div class="fw-bold fs-7 mb-2">{{ $roleDisplayName }}</div>
                                         @if ($role->name !== 'system-admin')
                                             <button type="button" class="btn btn-xs btn-outline-light py-0 px-1.5 toggle-column-btn fs-8" data-role-id="{{ $role->id }}" title="تحديد/إلغاء الكل لهذا الدور">
@@ -107,7 +152,7 @@
                                         $permLabel = Lang::has('permissions.' . $permission->name) ? __('permissions.' . $permission->name) : $permission->name;
                                     @endphp
                                     <tr>
-                                        <td class="ps-4 pe-3 py-2.5 bg-white" style="position: sticky; right: 0; background: #ffffff; z-index: 5; box-shadow: 2px 0 5px rgba(0,0,0,0.03);">
+                                        <td class="ps-3 pe-3 py-2.5 matrix-sticky-col">
                                             <span class="fw-semibold text-dark fs-7">{{ $permLabel }}</span>
                                         </td>
                                         @foreach ($roles as $role)

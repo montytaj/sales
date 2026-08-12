@@ -42,4 +42,42 @@ class Account extends Model
     {
         return $this->hasMany(JournalEntryLine::class, 'account_id');
     }
+
+    protected static function booted()
+    {
+        static::saved(function () {
+            static::clearAccountCache();
+        });
+
+        static::deleted(function () {
+            static::clearAccountCache();
+        });
+    }
+
+    public static function clearAccountCache()
+    {
+        \Illuminate\Support\Facades\Cache::forget('chart_of_accounts_tree');
+        \Illuminate\Support\Facades\Cache::forget('chart_of_accounts_selectable');
+    }
+
+    public static function getTreeCached()
+    {
+        return \Illuminate\Support\Facades\Cache::remember('chart_of_accounts_tree', 3600, function () {
+            return static::whereNull('parent_id')
+                ->where('is_active', true)
+                ->with('children.children.children')
+                ->orderBy('code')
+                ->get();
+        });
+    }
+
+    public static function getSelectableCached()
+    {
+        return \Illuminate\Support\Facades\Cache::remember('chart_of_accounts_selectable', 3600, function () {
+            return static::where('is_selectable', true)
+                ->where('is_active', true)
+                ->orderBy('code')
+                ->get();
+        });
+    }
 }

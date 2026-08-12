@@ -265,6 +265,9 @@
             <button class="btn btn-sm btn-outline-light rounded-pill px-3 py-1.5 fs-7 font-medium guide-category-btn" data-category="reports">
                 <i class="bi bi-bar-chart-line me-1"></i> {{ app()->getLocale() == 'ar' ? 'التقارير' : 'Reports' }}
             </button>
+            <button class="btn btn-sm btn-outline-light rounded-pill px-3 py-1.5 fs-7 font-medium guide-category-btn" data-category="accounting_cycle">
+                <i class="bi bi-arrow-repeat me-1"></i> {{ app()->getLocale() == 'ar' ? 'الدورة والعمليات الحسابية' : 'Accounting Cycle & Math' }}
+            </button>
         </div>
     </div>
 </div>
@@ -507,6 +510,11 @@
             </div>
         </div>
     </div>
+</div>
+
+<!-- Comprehensive Educational Accounting Suite Section (مراحل الدورة المحاسبية، حاسبة COGS، الإهلاك، وقواعد الحفظ) -->
+<div class="container-fluid max-w-7xl mx-auto px-0">
+    @include('guide.partials.accounting_educational_section')
 </div>
 
 <!-- Interactive System FAQ Accordion Powered by Alpine.js (Fixed 1-Second Disappearing Bug!) -->

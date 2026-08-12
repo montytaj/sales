@@ -86,7 +86,8 @@ class SettingsService
      */
     public function isFeatureEnabled(string $featureKey, ?int $branchId = null): bool
     {
-        return (bool) $this->get($featureKey, true, $branchId);
+        $default = ($featureKey === 'quick_actions_enabled') ? false : true;
+        return (bool) $this->get($featureKey, $default, $branchId);
     }
 
     /**
@@ -142,6 +143,7 @@ class SettingsService
             'cheques_enabled' => ['value' => '1', 'type' => 'boolean', 'group' => 'feature_flags'],
             'projects_enabled' => ['value' => '1', 'type' => 'boolean', 'group' => 'feature_flags'],
             'signage_enabled' => ['value' => '1', 'type' => 'boolean', 'group' => 'feature_flags'],
+            'quick_actions_enabled' => ['value' => '0', 'type' => 'boolean', 'group' => 'feature_flags'],
         ];
 
         foreach ($defaults as $key => $data) {

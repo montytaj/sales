@@ -60,7 +60,10 @@
             <div class="col-6 text-end">
                 <h3 class="font-bold text-dark mb-1">فاتورة مبيعات ضريبية</h3>
                 <h4 class="text-primary font-bold mb-1"><code>{{ $invoice->invoice_number }}</code></h4>
-                <small class="text-muted">تاريخ الإصدار: {{ $invoice->issue_date->format('Y-m-d') }}</small>
+                <small class="text-muted d-block">تاريخ الإصدار: {{ $invoice->issue_date->format('Y-m-d') }}</small>
+                @if($invoice->quotation)
+                    <small class="text-info font-bold d-block">مرجع عرض السعر: {{ $invoice->quotation->quotation_number }}</small>
+                @endif
             </div>
         </div>
 
@@ -112,7 +115,7 @@
                             @endif
                         </td>
                         <td class="text-center">{{ number_format($item->quantity, 2) }}</td>
-                        <td class="text-center">{{ __('services.units.' . $item->unit_of_measure) }}</td>
+                        <td class="text-center">{{ $item->unit?->name ?? ($item->item?->baseUnit?->name ?? (Lang::has('services.units.' . $item->unit_of_measure) ? __('services.units.' . $item->unit_of_measure) : ($item->unit_of_measure ?: 'قطعة'))) }}</td>
                         <td class="text-end">{{ number_format($item->unit_price, 2) }}</td>
                         <td class="text-end fw-bold">{{ number_format($item->total, 2) }}</td>
                     </tr>

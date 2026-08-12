@@ -126,12 +126,11 @@
             <table class="table table-hover align-middle datatable mb-0">
                 <thead class="bg-slate-50 border-bottom border-slate-200">
                     <tr>
-                        <th scope="col" class="ps-3 text-slate-600 font-semibold fs-7">كود المشروع</th>
-                        <th scope="col" class="text-slate-600 font-semibold fs-7">اسم المشروع</th>
+                        <th scope="col" class="ps-3 text-slate-600 font-semibold fs-7">المشروع</th>
                         <th scope="col" class="text-slate-600 font-semibold fs-7">العميل</th>
                         <th scope="col" class="text-slate-600 font-semibold fs-7 text-end">الميزانية</th>
                         <th scope="col" class="text-slate-600 font-semibold fs-7 text-end">المصروفات</th>
-                        <th scope="col" class="text-slate-600 font-semibold fs-7">نسبة الإنجاز</th>
+                        <th scope="col" class="text-slate-600 font-semibold fs-7">الإنجاز</th>
                         <th scope="col" class="text-slate-600 font-semibold fs-7">الحالة</th>
                         <th scope="col" class="text-slate-600 font-semibold fs-7 pe-3">التاريخ</th>
                     </tr>
@@ -139,10 +138,9 @@
                 <tbody class="divide-y divide-slate-100 fs-7">
                     @forelse ($projects as $proj)
                         <tr>
-                            <td class="ps-3 font-mono font-bold text-slate-900">
-                                <a href="{{ route('projects.show', $proj) }}" class="text-decoration-none hover-primary">{{ $proj->project_number }}</a>
+                            <td class="ps-3 font-bold text-slate-900">
+                                <a href="{{ route('projects.show', $proj) }}" class="text-decoration-none hover-primary">{{ $proj->name }}</a>
                             </td>
-                            <td class="font-bold text-slate-900">{{ $proj->name }}</td>
                             <td class="font-semibold text-slate-800">{{ $proj->customer?->name }}</td>
                             <td class="text-end font-mono text-slate-800 font-bold dir-ltr">{{ number_format($proj->budget, 2) }}</td>
                             <td class="text-end font-mono text-warning font-semibold dir-ltr">{{ number_format($proj->total_expenses, 2) }}</td>
@@ -161,7 +159,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="p-0">
+                            <td colspan="7" class="p-0">
                                 <x-empty-state icon="bi-diagram-3" title="لا توجد مشاريع" description="لم يتم العثور على مشاريع تطابق الفلترة المحددة." />
                             </td>
                         </tr>

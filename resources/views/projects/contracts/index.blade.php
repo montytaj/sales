@@ -58,8 +58,8 @@
                         <tr>
                             <th scope="col" class="ps-3">{{ __('projects.contract_number') }}</th>
                             <th scope="col">{{ __('customers.name') }}</th>
-                            <th scope="col">{{ __('projects.net_amount') }}</th>
-                            <th scope="col">تاريخ البدء والانتهاء</th>
+                            <th scope="col">القيمة</th>
+                            <th scope="col">الفترة</th>
                             <th scope="col">الاعتماد</th>
                             <th scope="col">الحالة</th>
                             <th scope="col" class="text-end pe-3">الإجراءات</th>
@@ -87,10 +87,12 @@
                                         {{ __('projects.contract_statuses.' . $contract->status) }}
                                     </span>
                                 </td>
-                                <td class="text-end pe-3">
-                                    <a href="{{ route('contracts.show', $contract) }}" class="btn btn-sm btn-outline-secondary">
-                                        <i class="bi bi-eye me-1"></i>عرض التفاصيل
-                                    </a>
+                                <td class="text-end pe-3 text-nowrap">
+                                    <div class="d-inline-flex align-items-center justify-content-end gap-1">
+                                        <a href="{{ route('contracts.show', $contract) }}" class="btn btn-action-icon btn-action-show" title="عرض التفاصيل">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                    </div>
                                 </td>
                             </tr>
                         @empty

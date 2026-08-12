@@ -1,7 +1,8 @@
 <aside id="sidebar" class="bg-dark text-white border-end flex-shrink-0 transition-all p-2 pt-0 d-flex flex-column align-self-stretch" style="min-height: 100%; height: auto; position: relative; z-index: 1020; padding-top: 0 !important;">
     <div class="sidebar-sticky-wrapper d-flex flex-column flex-grow-1 sticky-top overflow-y-auto custom-scrollbar" style="top: var(--header-height, 70px); height: calc(100vh - var(--header-height, 70px)); overscroll-behavior: contain; overscroll-behavior-y: contain;">
         <!-- Sidebar Header -->
-        <div class="sidebar-header pt-3 pb-2 mb-1 border-bottom border-slate-800 text-center px-2 flex-shrink-0">
+        <div class="sidebar-header pt-3 pb-2 mb-1 border-bottom border-slate-800 text-center px-2 flex-shrink-0 position-relative">
+            <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-2.5 d-lg-none" id="closeMobileSidebar" aria-label="Close"></button>
             <div class="d-flex flex-column align-items-center justify-content-start gap-0.5 overflow-hidden w-100">
                 @php $sysLogo = setting('logo'); @endphp
                 @if($sysLogo && \Illuminate\Support\Facades\Storage::disk('public')->exists($sysLogo))
@@ -47,24 +48,11 @@
                    data-bs-placement="{{ app()->getLocale() == 'ar' ? 'left' : 'right' }}" 
                    title="{{ app()->getLocale() == 'ar' ? 'لوحة التحكم' : 'Dashboard' }}">
                     <i class="bi bi-speedometer2 fs-5 text-primary"></i>
-                    <span class="sidebar-text">{{ app()->getLocale() == 'ar' ? 'لوحة التحكم الرئيسية' : 'Dashboard' }}</span>
+                    <span class="sidebar-text">{{ app()->getLocale() == 'ar' ? 'لوحة التحكم' : 'Dashboard' }}</span>
                 </a>
             </li>
 
-            <!-- دليل وشرح المنظومة -->
-            <li class="sidebar-nav-item">
-                <a href="{{ route('system-guide') }}" 
-                   class="sidebar-nav-link {{ request()->routeIs('system-guide') ? 'active' : '' }}"
-                   data-bs-toggle="tooltip" 
-                   data-bs-placement="{{ app()->getLocale() == 'ar' ? 'left' : 'right' }}" 
-                   title="{{ app()->getLocale() == 'ar' ? 'دليل وشرح خصائص المنظومة' : 'System Guide & Manual' }}">
-                    <i class="bi bi-compass-fill fs-5 text-emerald-400"></i>
-                    <span class="sidebar-text font-bold text-white">{{ app()->getLocale() == 'ar' ? 'دليل المنظومة والخصائص' : 'System Guide' }}</span>
-                    <span class="badge bg-emerald-500-20 text-emerald-400 border border-emerald-500-30 ms-auto fs-8 rounded-pill px-2 sidebar-text">
-                        {{ app()->getLocale() == 'ar' ? 'شرح' : 'Guide' }}
-                    </span>
-                </a>
-            </li>
+
 
             <!-- 2. البيانات الأساسية -->
             @php
@@ -106,12 +94,50 @@
             </li>
 
             <!-- 3. المخازن والأصناف -->
-            <li class="sidebar-nav-item">
-                <a href="{{ route('inventory.index') }}" 
-                   class="sidebar-nav-link {{ request()->routeIs('inventory.*') ? 'active' : '' }}">
-                    <i class="bi bi-box-seam-fill fs-5 text-primary"></i>
-                    <span class="sidebar-text">{{ app()->getLocale() == 'ar' ? 'المخازن والأصناف' : 'Inventory & Items' }}</span>
-                </a>
+            @php
+                $isInventoryActive = request()->routeIs('inventory.*') || request()->routeIs('warehouses.*') || request()->routeIs('warehouse-transfers.*');
+            @endphp
+            <li class="sidebar-nav-item" x-data="{ open: {{ $isInventoryActive ? 'true' : 'false' }} }">
+                <button class="sidebar-group-btn {{ $isInventoryActive ? 'active' : '' }}" 
+                        type="button" 
+                        @click="open = !open" 
+                        :aria-expanded="open ? 'true' : 'false'">
+                    <div class="d-flex align-items-center gap-2.5">
+                        <i class="bi bi-box-seam-fill fs-5 text-primary"></i>
+                        <span class="sidebar-text">{{ app()->getLocale() == 'ar' ? 'المخازن والأصناف' : 'Inventory & Items' }}</span>
+                    </div>
+                    <i class="bi bi-chevron-down chevron-icon sidebar-text"></i>
+                </button>
+                <div class="sidebar-group-menu mt-1" x-show="open">
+                    <ul class="list-unstyled ps-0 mb-0 d-flex flex-column gap-1">
+                        <li>
+                            <a href="{{ route('inventory.index') }}" class="sidebar-sub-link {{ request()->routeIs('inventory.index') ? 'active' : '' }}">
+                                <i class="bi bi-boxes fs-6 text-primary me-1"></i>
+                                <span>{{ app()->getLocale() == 'ar' ? 'دليل الأصناف' : 'Inventory Items' }}</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ route('inventory.item-card') }}" class="sidebar-sub-link {{ request()->routeIs('inventory.item-card') ? 'active' : '' }}">
+                                <i class="bi bi-card-checklist fs-6 text-primary me-1"></i>
+                                <span>{{ app()->getLocale() == 'ar' ? 'جرد الأصناف' : 'Item Inventory' }}</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ route('warehouses.index') }}" class="sidebar-sub-link {{ request()->routeIs('warehouses.*') ? 'active' : '' }}">
+                                <i class="bi bi-house-gear fs-6 text-primary me-1"></i>
+                                <span>{{ app()->getLocale() == 'ar' ? 'إدارة المخازن' : 'Warehouses Management' }}</span>
+                            </a>
+                        </li>
+                        @canany(['manage-inventory', 'view-warehouse-transfers'])
+                            <li>
+                                <a href="{{ route('warehouse-transfers.index') }}" class="sidebar-sub-link {{ request()->routeIs('warehouse-transfers.*') ? 'active' : '' }}">
+                                    <i class="bi bi-arrow-left-right fs-6 text-primary me-1"></i>
+                                    <span>{{ app()->getLocale() == 'ar' ? 'التحويل بين المخازن' : 'Warehouse Transfers' }}</span>
+                                </a>
+                            </li>
+                        @endcanany
+                    </ul>
+                </div>
             </li>
 
             <!-- 4. المبيعات -->
@@ -132,13 +158,13 @@
                 <div class="sidebar-group-menu mt-1" x-show="open">
                     <ul class="list-unstyled ps-0 mb-0 d-flex flex-column gap-1">
                         <li>
-                            <a href="{{ route('pos.index') }}" class="sidebar-sub-link {{ request()->routeIs('pos.*') ? 'active text-primary font-bold' : '' }}">
+                            <a href="{{ route('pos.index') }}" class="sidebar-sub-link {{ request()->routeIs('pos.*') ? 'active' : '' }}">
                                 <i class="bi bi-display fs-6 text-primary me-1"></i>
-                                <span>{{ app()->getLocale() == 'ar' ? 'شاشة الكاشير (POS)' : 'Cashier Screen (POS)' }}</span>
+                                <span>{{ app()->getLocale() == 'ar' ? 'شاشة الكاشير' : 'Cashier Screen' }}</span>
                             </a>
                         </li>
                         <li>
-                            <a href="{{ route('invoices.create') }}" class="sidebar-sub-link {{ request()->routeIs('invoices.create') ? 'active text-primary font-bold' : '' }}">
+                            <a href="{{ route('invoices.create') }}" class="sidebar-sub-link {{ request()->routeIs('invoices.create') ? 'active' : '' }}">
                                 <i class="bi bi-plus-circle fs-6 text-primary me-1"></i>
                                 <span>{{ app()->getLocale() == 'ar' ? 'فاتورة مبيعات جديدة' : 'New Sales Invoice' }}</span>
                             </a>
@@ -183,7 +209,7 @@
                 <div class="sidebar-group-menu mt-1" x-show="open">
                     <ul class="list-unstyled ps-0 mb-0 d-flex flex-column gap-1">
                         <li>
-                            <a href="{{ route('purchases.create_invoice') }}" class="sidebar-sub-link {{ request()->routeIs('purchases.create_invoice') ? 'active text-primary font-bold' : '' }}">
+                            <a href="{{ route('purchases.create_invoice') }}" class="sidebar-sub-link {{ request()->routeIs('purchases.create_invoice') ? 'active' : '' }}">
                                 <i class="bi bi-plus-circle fs-6 text-primary me-1"></i>
                                 <span>{{ app()->getLocale() == 'ar' ? 'فاتورة شراء جديدة' : 'New Purchase Invoice' }}</span>
                             </a>
@@ -191,7 +217,13 @@
                         <li>
                             <a href="{{ route('purchases.index') }}" class="sidebar-sub-link {{ request()->routeIs('purchases.index') ? 'active' : '' }}">
                                 <i class="bi bi-file-earmark-zip fs-6 text-primary me-1"></i>
-                                <span>{{ app()->getLocale() == 'ar' ? 'قائمة فواتير المشتريات' : 'Purchase Invoices' }}</span>
+                                <span>{{ app()->getLocale() == 'ar' ? 'فواتير المشتريات' : 'Purchase Invoices' }}</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ route('purchases.payables') }}" class="sidebar-sub-link {{ request()->routeIs('purchases.payables') ? 'active' : '' }}">
+                                <i class="bi bi-hourglass-split fs-6 text-danger me-1"></i>
+                                <span>{{ app()->getLocale() == 'ar' ? 'مستحقات الموردين' : 'Supplier Payables' }}</span>
                             </a>
                         </li>
                         <li>
@@ -249,7 +281,7 @@
                 </div>
             </li>
 
-            <!-- 7. المستخدمون والصلاحيات -->
+            <!-- 7. المستخدمون -->
             @canany(['view-users', 'manage-roles'])
                 @php
                     $isUsersActive = request()->routeIs('users.*') || request()->routeIs('roles.*');
@@ -261,7 +293,7 @@
                             :aria-expanded="open ? 'true' : 'false'">
                         <div class="d-flex align-items-center gap-2.5">
                             <i class="bi bi-people-fill fs-5 text-primary"></i>
-                            <span class="sidebar-text">{{ app()->getLocale() == 'ar' ? 'المستخدمون والصلاحيات' : 'Users & Roles' }}</span>
+                            <span class="sidebar-text">{{ app()->getLocale() == 'ar' ? 'المستخدمون' : 'Users & Roles' }}</span>
                         </div>
                         <i class="bi bi-chevron-down chevron-icon sidebar-text"></i>
                     </button>
@@ -270,7 +302,7 @@
                             <li>
                                 <a href="{{ route('users.index') }}" class="sidebar-sub-link {{ request()->routeIs('users.*') ? 'active' : '' }}">
                                     <i class="bi bi-person-lines-fill fs-6 text-primary me-1"></i>
-                                    <span>{{ app()->getLocale() == 'ar' ? 'المستخدمون' : 'Users' }}</span>
+                                    <span>{{ app()->getLocale() == 'ar' ? 'المستخدمين' : 'Users' }}</span>
                                 </a>
                             </li>
                             <li>
@@ -284,62 +316,173 @@
                 </li>
             @endcanany
 
-            <!-- 8. التقارير -->
-            @php
-                $isReportsActive = request()->routeIs('reports.*');
-            @endphp
-            <li class="sidebar-nav-item" x-data="{ open: {{ $isReportsActive ? 'true' : 'false' }} }">
-                <button class="sidebar-group-btn {{ $isReportsActive ? 'active' : '' }}" 
-                        type="button" 
-                        @click="open = !open" 
-                        :aria-expanded="open ? 'true' : 'false'">
-                    <div class="d-flex align-items-center gap-2.5">
-                        <i class="bi bi-bar-chart-line-fill fs-5 text-primary"></i>
-                        <span class="sidebar-text">{{ app()->getLocale() == 'ar' ? 'التقارير' : 'Reports' }}</span>
+            <!-- 8. التقارير العامة -->
+            @canany(['reports.access', 'reports.sales.view', 'reports.customers.view', 'reports.suppliers.view', 'reports.inventory.view', 'reports.profitability.view', 'view-activity-logs'])
+                @php
+                    $isGeneralReportsActive = request()->routeIs('reports.index') || request()->routeIs('reports.sales') || request()->routeIs('reports.warehouse-inventory') || request()->routeIs('reports.inventory') || request()->routeIs('reports.financial-comparison') || request()->routeIs('reports.profitable-items') || request()->routeIs('reports.customer-statement') || request()->routeIs('reports.supplier-statement') || request()->routeIs('activity-logs.*');
+                @endphp
+                <li class="sidebar-nav-item" x-data="{ open: {{ $isGeneralReportsActive ? 'true' : 'false' }} }">
+                    <button class="sidebar-group-btn {{ $isGeneralReportsActive ? 'active' : '' }}" 
+                            type="button" 
+                            @click="open = !open" 
+                            :aria-expanded="open ? 'true' : 'false'">
+                        <div class="d-flex align-items-center gap-2.5">
+                            <i class="bi bi-bar-chart-line-fill fs-5 text-primary"></i>
+                            <span class="sidebar-text">{{ app()->getLocale() == 'ar' ? 'التقارير' : 'General Reports' }}</span>
+                        </div>
+                        <i class="bi bi-chevron-down chevron-icon sidebar-text"></i>
+                    </button>
+                    <div class="sidebar-group-menu mt-1" x-show="open">
+                        <ul class="list-unstyled ps-0 mb-0 d-flex flex-column gap-1">
+                            <li>
+                                <a href="{{ route('reports.index') }}" class="sidebar-sub-link {{ request()->routeIs('reports.index') ? 'active' : '' }}">
+                                    <i class="bi bi-grid-fill fs-6 text-primary me-1"></i>
+                                    <span>{{ app()->getLocale() == 'ar' ? 'مركز التقارير' : 'Overview' }}</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="{{ route('reports.sales') }}" class="sidebar-sub-link {{ request()->routeIs('reports.sales') ? 'active' : '' }}">
+                                    <i class="bi bi-receipt fs-6 text-primary me-1"></i>
+                                    <span>{{ app()->getLocale() == 'ar' ? 'تقارير المبيعات' : 'Sales Reports' }}</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="{{ route('reports.warehouse-inventory') }}" class="sidebar-sub-link {{ request()->routeIs('reports.warehouse-inventory') ? 'active' : '' }}">
+                                    <i class="bi bi-clipboard-check fs-6 text-primary me-1"></i>
+                                    <span>{{ app()->getLocale() == 'ar' ? 'تقرير جرد المخزن' : 'Warehouse Inventory' }}</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="{{ route('reports.inventory') }}" class="sidebar-sub-link {{ request()->routeIs('reports.inventory') ? 'active' : '' }}">
+                                    <i class="bi bi-boxes fs-6 text-primary me-1"></i>
+                                    <span>{{ app()->getLocale() == 'ar' ? 'أرصدة المخزون العام' : 'General Inventory' }}</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="{{ route('inventory.item-card') }}" class="sidebar-sub-link {{ request()->routeIs('inventory.item-card') ? 'active' : '' }}">
+                                    <i class="bi bi-card-checklist fs-6 text-primary me-1"></i>
+                                    <span>{{ app()->getLocale() == 'ar' ? 'جرد الأصناف' : 'Item Inventory' }}</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="{{ route('reports.financial-comparison') }}" class="sidebar-sub-link {{ request()->routeIs('reports.financial-comparison') ? 'active' : '' }}">
+                                    <i class="bi bi-arrows-collapse fs-6 text-primary me-1"></i>
+                                    <span>{{ app()->getLocale() == 'ar' ? 'مقارنة الفترات المالية' : 'Period Comparison' }}</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="{{ route('reports.profitable-items') }}" class="sidebar-sub-link {{ request()->routeIs('reports.profitable-items') ? 'active' : '' }}">
+                                    <i class="bi bi-graph-up-arrow fs-6 text-emerald-400 me-1"></i>
+                                    <span>{{ app()->getLocale() == 'ar' ? 'الأصناف الأكثر ربحية' : 'Most Profitable Items' }}</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="{{ route('reports.customer-statement') }}" class="sidebar-sub-link {{ request()->routeIs('reports.customer-statement') ? 'active' : '' }}">
+                                    <i class="bi bi-person-lines-fill fs-6 text-primary me-1"></i>
+                                    <span>{{ app()->getLocale() == 'ar' ? 'كشف حساب عميل' : 'Customer Statement' }}</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="{{ route('reports.supplier-statement') }}" class="sidebar-sub-link {{ request()->routeIs('reports.supplier-statement') ? 'active' : '' }}">
+                                    <i class="bi bi-truck fs-6 text-primary me-1"></i>
+                                    <span>{{ app()->getLocale() == 'ar' ? 'كشف حساب مورد' : 'Supplier Statement' }}</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="{{ route('activity-logs.index') }}" class="sidebar-sub-link {{ request()->routeIs('activity-logs.*') ? 'active' : '' }}">
+                                    <i class="bi bi-shield-check fs-6 text-primary me-1"></i>
+                                    <span>{{ app()->getLocale() == 'ar' ? 'سجل تتبع الحركات والرقابة' : 'Audit Trail & Logs' }}</span>
+                                </a>
+                            </li>
+                        </ul>
                     </div>
-                    <i class="bi bi-chevron-down chevron-icon sidebar-text"></i>
-                </button>
-                <div class="sidebar-group-menu mt-1" x-show="open">
-                    <ul class="list-unstyled ps-0 mb-0 d-flex flex-column gap-1">
-                        <li>
-                            <a href="{{ route('reports.index') }}" class="sidebar-sub-link {{ request()->routeIs('reports.index') ? 'active' : '' }}">
-                                <i class="bi bi-grid-fill fs-6 text-primary me-1"></i>
-                                <span>{{ app()->getLocale() == 'ar' ? 'مركز التقارير' : 'Overview' }}</span>
-                            </a>
-                        </li>
-                        <li>
-                            <a href="{{ route('reports.sales') }}" class="sidebar-sub-link {{ request()->routeIs('reports.sales') ? 'active' : '' }}">
-                                <i class="bi bi-receipt fs-6 text-primary me-1"></i>
-                                <span>{{ app()->getLocale() == 'ar' ? 'تقارير المبيعات' : 'Sales Reports' }}</span>
-                            </a>
-                        </li>
-                        <li>
-                            <a href="{{ route('reports.inventory') }}" class="sidebar-sub-link {{ request()->routeIs('reports.inventory') ? 'active' : '' }}">
-                                <i class="bi bi-boxes fs-6 text-primary me-1"></i>
-                                <span>{{ app()->getLocale() == 'ar' ? 'تقارير المخزون' : 'Inventory Reports' }}</span>
-                            </a>
-                        </li>
-                        <li>
-                            <a href="{{ route('reports.customer-statement') }}" class="sidebar-sub-link {{ request()->routeIs('reports.customer-statement') ? 'active' : '' }}">
-                                <i class="bi bi-person-lines-fill fs-6 text-primary me-1"></i>
-                                <span>{{ app()->getLocale() == 'ar' ? 'كشف حساب عميل' : 'Customer Statement' }}</span>
-                            </a>
-                        </li>
-                        <li>
-                            <a href="{{ route('reports.supplier-statement') }}" class="sidebar-sub-link {{ request()->routeIs('reports.supplier-statement') ? 'active' : '' }}">
-                                <i class="bi bi-truck fs-6 text-primary me-1"></i>
-                                <span>{{ app()->getLocale() == 'ar' ? 'كشف حساب مورد' : 'Supplier Statement' }}</span>
-                            </a>
-                        </li>
-                        <li>
-                            <a href="{{ route('activity-logs.index') }}" class="sidebar-sub-link {{ request()->routeIs('activity-logs.*') ? 'active' : '' }}">
-                                <i class="bi bi-shield-check fs-6 text-primary me-1"></i>
-                                <span>{{ app()->getLocale() == 'ar' ? 'سجل تتبع الحركات والرقابة' : 'Audit Trail & Logs' }}</span>
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-            </li>
+                </li>
+            @endcanany
+
+            <!-- 8.5. التقارير المالية -->
+            @canany(['reports.financial.view', 'reports.financial_statements.view', 'reports.balance_sheet.view', 'reports.income_statement.view', 'reports.trial_balance.view', 'reports.cash_flow.view', 'reports.equity_changes.view', 'reports.general_ledger.view', 'reports.account_balances.view'])
+                @php
+                    $isFinancialReportsActive = request()->routeIs('reports.balance-sheet') || request()->routeIs('reports.income-statement') || request()->routeIs('reports.trial-balance') || request()->routeIs('reports.cash-flow') || request()->routeIs('reports.equity-changes') || request()->routeIs('reports.general-ledger') || request()->routeIs('reports.account-balances');
+                @endphp
+                <li class="sidebar-nav-item" x-data="{ open: {{ $isFinancialReportsActive ? 'true' : 'false' }} }">
+                    <button class="sidebar-group-btn {{ $isFinancialReportsActive ? 'active' : '' }}" 
+                            type="button" 
+                            @click="open = !open" 
+                            :aria-expanded="open ? 'true' : 'false'">
+                        <div class="d-flex align-items-center gap-2.5">
+                            <i class="bi bi-file-earmark-spreadsheet-fill fs-5 text-emerald-400"></i>
+                            <span class="sidebar-text font-bold text-white">{{ app()->getLocale() == 'ar' ? 'التقارير المالية' : 'Financial Statements' }}</span>
+                        </div>
+                        <i class="bi bi-chevron-down chevron-icon sidebar-text"></i>
+                    </button>
+                    <div class="sidebar-group-menu mt-1" x-show="open">
+                        <ul class="list-unstyled ps-0 mb-0 d-flex flex-column gap-1">
+                            @canany(['reports.balance_sheet.view', 'reports.financial_statements.view', 'reports.financial.view'])
+                                <li>
+                                    <a href="{{ route('reports.balance-sheet') }}" class="sidebar-sub-link {{ request()->routeIs('reports.balance-sheet') ? 'active' : '' }}">
+                                        <i class="bi bi-bank fs-6 text-primary me-1"></i>
+                                        <span>{{ app()->getLocale() == 'ar' ? 'قائمة المركز المالي (الميزانية)' : 'Balance Sheet' }}</span>
+                                    </a>
+                                </li>
+                            @endcanany
+
+                            @canany(['reports.income_statement.view', 'reports.financial_statements.view', 'reports.financial.view'])
+                                <li>
+                                    <a href="{{ route('reports.income-statement') }}" class="sidebar-sub-link {{ request()->routeIs('reports.income-statement') ? 'active' : '' }}">
+                                        <i class="bi bi-graph-up-arrow fs-6 text-success me-1"></i>
+                                        <span>{{ app()->getLocale() == 'ar' ? 'قائمة الدخل (الأرباح والخسائر)' : 'Income Statement' }}</span>
+                                    </a>
+                                </li>
+                            @endcanany
+
+                            @canany(['reports.trial_balance.view', 'reports.financial_statements.view', 'reports.financial.view'])
+                                <li>
+                                    <a href="{{ route('reports.trial-balance') }}" class="sidebar-sub-link {{ request()->routeIs('reports.trial-balance') ? 'active' : '' }}">
+                                        <i class="bi bi-card-checklist fs-6 text-info me-1"></i>
+                                        <span>{{ app()->getLocale() == 'ar' ? 'ميزان المراجعة' : 'Trial Balance' }}</span>
+                                    </a>
+                                </li>
+                            @endcanany
+
+                            @canany(['reports.cash_flow.view', 'reports.financial_statements.view', 'reports.financial.view'])
+                                <li>
+                                    <a href="{{ route('reports.cash-flow') }}" class="sidebar-sub-link {{ request()->routeIs('reports.cash-flow') ? 'active' : '' }}">
+                                        <i class="bi bi-water fs-6 text-warning me-1"></i>
+                                        <span>{{ app()->getLocale() == 'ar' ? 'قائمة التدفقات النقدية' : 'Cash Flow Statement' }}</span>
+                                    </a>
+                                </li>
+                            @endcanany
+
+                            @canany(['reports.equity_changes.view', 'reports.financial_statements.view', 'reports.financial.view'])
+                                <li>
+                                    <a href="{{ route('reports.equity-changes') }}" class="sidebar-sub-link {{ request()->routeIs('reports.equity-changes') ? 'active' : '' }}">
+                                        <i class="bi bi-pie-chart fs-6 text-secondary me-1"></i>
+                                        <span>{{ app()->getLocale() == 'ar' ? 'التغيرات في حقوق الملكية' : 'Changes in Equity' }}</span>
+                                    </a>
+                                </li>
+                            @endcanany
+
+                            @canany(['reports.general_ledger.view', 'reports.financial_statements.view', 'reports.financial.view'])
+                                <li>
+                                    <a href="{{ route('reports.general-ledger') }}" class="sidebar-sub-link {{ request()->routeIs('reports.general-ledger') ? 'active' : '' }}">
+                                        <i class="bi bi-journal-bookmark fs-6 text-dark me-1"></i>
+                                        <span>{{ app()->getLocale() == 'ar' ? 'تقرير دفتر الأستاذ العام' : 'General Ledger' }}</span>
+                                    </a>
+                                </li>
+                            @endcanany
+
+                            @canany(['reports.account_balances.view', 'reports.financial_statements.view', 'reports.financial.view'])
+                                <li>
+                                    <a href="{{ route('reports.account-balances') }}" class="sidebar-sub-link {{ request()->routeIs('reports.account-balances') ? 'active' : '' }}">
+                                        <i class="bi bi-diagram-3 fs-6 text-emerald-400 me-1"></i>
+                                        <span>{{ app()->getLocale() == 'ar' ? 'كشف أرصدة شجرة الحسابات' : 'Account Balances' }}</span>
+                                    </a>
+                                </li>
+                            @endcanany
+                        </ul>
+                    </div>
+                </li>
+            @endcanany
 
             <!-- 9. الإعدادات -->
             @canany(['manage-settings', 'view-branches'])
@@ -381,6 +524,21 @@
                     </div>
                 </li>
             @endcanany
+
+            <!-- 10. دليل النظام -->
+            <li class="sidebar-nav-item">
+                <a href="{{ route('system-guide') }}" 
+                   class="sidebar-nav-link {{ request()->routeIs('system-guide') ? 'active' : '' }}"
+                   data-bs-toggle="tooltip" 
+                   data-bs-placement="{{ app()->getLocale() == 'ar' ? 'left' : 'right' }}" 
+                   title="{{ app()->getLocale() == 'ar' ? 'دليل النظام' : 'System Guide' }}">
+                    <i class="bi bi-compass-fill fs-5 text-emerald-400"></i>
+                    <span class="sidebar-text font-bold text-white">{{ app()->getLocale() == 'ar' ? 'دليل النظام' : 'System Guide' }}</span>
+                    <span class="badge bg-emerald-500-20 text-emerald-400 border border-emerald-500-30 ms-auto fs-8 rounded-pill px-2 sidebar-text">
+                        {{ app()->getLocale() == 'ar' ? 'شرح' : 'Guide' }}
+                    </span>
+                </a>
+            </li>
         </ul>
     </div>
 
@@ -442,6 +600,15 @@
                 </ul>
             </div>
         @endauth
+
+        @guest
+            <div class="px-1 text-center">
+                <a href="{{ route('login') }}" class="btn btn-primary w-100 py-2 rounded-3 font-bold fs-7 d-flex align-items-center justify-content-center gap-2 shadow-sm">
+                    <i class="bi bi-box-arrow-in-right fs-5"></i>
+                    <span class="sidebar-text">{{ app()->getLocale() == 'ar' ? 'تسجيل الدخول' : 'Sign In' }}</span>
+                </a>
+            </div>
+        @endguest
     </div>
 </div>
 </aside>

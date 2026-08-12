@@ -24,7 +24,7 @@ class WorkshopKioskController extends Controller
 
         $activeOrders = WorkOrder::with(['customer', 'authorization'])
             ->whereIn('status', ['authorized_to_start', 'pending_execution', 'in_progress', 'paused'])
-            ->orderByRaw("FIELD(priority, 'urgent', 'high', 'normal', 'low')")
+            ->orderByRaw("CASE priority WHEN 'urgent' THEN 1 WHEN 'high' THEN 2 WHEN 'normal' THEN 3 WHEN 'low' THEN 4 ELSE 5 END")
             ->get();
 
         return view('workshop.kiosk.index', compact('activeOrders'));

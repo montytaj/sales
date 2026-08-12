@@ -44,14 +44,14 @@
     </x-report-filter-bar>
 
     <!-- KPI Summary Row -->
-    <div class="row g-3 mb-4">
-        <div class="col-6 col-md-4">
+    <div class="row g-3 mb-4 justify-content-center align-items-stretch">
+        <div class="col-12 col-sm-6 col-lg-4">
             <x-kpi-card title="إجمالي المقبوضات (وارد)" :value="number_format($total_receipts, 2) . ' ر.س'" icon="bi-arrow-down-left-circle" color="emerald" subtitle="سندات القبض المعتمدة" />
         </div>
-        <div class="col-6 col-md-4">
+        <div class="col-12 col-sm-6 col-lg-4">
             <x-kpi-card title="إجمالي المدفوعات (صادر)" :value="number_format($total_payments, 2) . ' ر.س'" icon="bi-arrow-up-right-circle" color="danger" subtitle="سندات الصرف المعتمدة" />
         </div>
-        <div class="col-12 col-md-4">
+        <div class="col-12 col-sm-6 col-lg-4">
             <x-kpi-card title="الصافي النقدي بالفترة" :value="number_format($net_cashflow, 2) . ' ر.س'" icon="bi-bank" color="primary" subtitle="صافي التدفق النقدي" />
         </div>
     </div>

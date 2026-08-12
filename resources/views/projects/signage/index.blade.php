@@ -60,10 +60,10 @@
                         <tr>
                             <th scope="col" class="ps-3">رقم الطلب</th>
                             <th scope="col">{{ __('customers.name') }}</th>
-                            <th scope="col">الربط بمشروع</th>
+                            <th scope="col">المشروع</th>
                             <th scope="col">المقاسات</th>
-                            <th scope="col">اعتماد التصميم</th>
-                            <th scope="col">التصنيع والتركيب</th>
+                            <th scope="col">التصميم</th>
+                            <th scope="col">المرحلة</th>
                             <th scope="col">الحالة</th>
                             <th scope="col" class="text-end pe-3">الإجراءات</th>
                         </tr>
@@ -93,10 +93,12 @@
                                     <small class="text-muted">تركيب: {{ $signage->installation_status }}</small>
                                 </td>
                                 <td><span class="badge bg-primary">{{ $signage->status }}</span></td>
-                                <td class="text-end pe-3">
-                                    <a href="{{ route('signage-orders.show', $signage) }}" class="btn btn-sm btn-outline-secondary">
-                                        <i class="bi bi-eye me-1"></i>عرض التفاصيل
-                                    </a>
+                                <td class="text-end pe-3 text-nowrap">
+                                    <div class="d-inline-flex align-items-center justify-content-end gap-1">
+                                        <a href="{{ route('signage-orders.show', $signage) }}" class="btn btn-action-icon btn-action-show" title="عرض التفاصيل">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                    </div>
                                 </td>
                             </tr>
                         @empty

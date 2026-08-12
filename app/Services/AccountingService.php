@@ -38,14 +38,12 @@ class AccountingService
                 throw new InvalidArgumentException("القيد المحاسبي غير متوازن! إجمالي المدين (" . number_format($totalDebit, 2) . ") لا يساوي إجمالي الدائن (" . number_format($totalCredit, 2) . ").");
             }
 
-            // Check closed fiscal period
+            // Check closed fiscal period & global lock date
+            $this->validatePeriodNotLocked($entryDate);
+
             $fiscalPeriod = FiscalPeriod::where('start_date', '<=', $entryDate)
                 ->where('end_date', '>=', $entryDate)
                 ->first();
-
-            if ($fiscalPeriod && $fiscalPeriod->is_closed) {
-                throw new InvalidArgumentException("لا يمكن إضافة قيد محاسبي في فترة مالية مغلقة ({$fiscalPeriod->period_name}).");
-            }
 
             $userId = auth()->id() ?? User::first()?->id ?? 1;
 
@@ -112,4 +110,138 @@ class AccountingService
             );
         });
     }
+
+    /**
+     * Calculate Cost of Goods Sold (COGS)
+     * Formula: COGS = Beginning Inventory + Purchases - Purchase Returns - Ending Inventory
+     */
+    public function calculateCogs(float $beginningInventory, float $purchases, float $purchaseReturns, float $endingInventory): float
+    {
+        return max(0.0, ($beginningInventory + $purchases) - $purchaseReturns - $endingInventory);
+    }
+
+    /**
+     * Calculate Depreciation amount based on standard accounting methods
+     */
+    public function calculateDepreciation(
+        string $method,
+        float $cost,
+        float $salvageValue,
+        int $lifespanYears,
+        ?float $currentBookValue = null,
+        ?float $unitsProduced = null,
+        ?float $totalCapacity = null
+    ): float {
+        if ($lifespanYears <= 0) {
+            throw new InvalidArgumentException("العمر الإنتاجي يجب أن يكون أكبر من صفر.");
+        }
+
+        $depreciableBase = max(0.0, $cost - $salvageValue);
+
+        switch ($method) {
+            case 'straight_line':
+                // طريقة القسط الثابت = (التكلفة - الخردة) / العمر الإنتاجي
+                return round($depreciableBase / $lifespanYears, 2);
+
+            case 'declining_balance':
+                // طريقة القسط المتناقص = (2 / العمر الإنتاجي) * القيمة الدفترية الحالية
+                $bookValue = $currentBookValue ?? $cost;
+                $rate = 2 / $lifespanYears;
+                $depreciation = $bookValue * $rate;
+                return round(min($depreciation, max(0.0, $bookValue - $salvageValue)), 2);
+
+            case 'units_of_production':
+                // طريقة وحدات الإنتاج = ((التكلفة - الخردة) / إجمالي الطاقة) * الوحدات المنتجة
+                if (!$totalCapacity || $totalCapacity <= 0 || !$unitsProduced) {
+                    throw new InvalidArgumentException("طريقة وحدات الإنتاج تتطلب إدخال الطاقة الإنتاجية والوحدات المنتجة بشكل صحيح.");
+                }
+                $ratePerUnit = $depreciableBase / $totalCapacity;
+                return round($ratePerUnit * $unitsProduced, 2);
+
+            default:
+                throw new InvalidArgumentException("طريقة الإهلاك غير مدعومة: {$method}");
+        }
+    }
+
+    /**
+     * Create adjusting entry for Depreciation
+     * Debit: Depreciation Expense Account
+     * Credit: Accumulated Depreciation Account
+     */
+    public function createDepreciationJournalEntry(
+        string $entryDate,
+        int $depreciationExpenseAccountId,
+        int $accumulatedDepreciationAccountId,
+        float $amount,
+        string $description = 'قيد إهلاك أصول ثابتة',
+        bool $autoPost = false
+    ): JournalEntry {
+        $lines = [
+            [
+                'account_id' => $depreciationExpenseAccountId,
+                'debit' => $amount,
+                'credit' => 0.0,
+                'description' => "من حـ/ مصروف الإهلاك - {$description}",
+            ],
+            [
+                'account_id' => $accumulatedDepreciationAccountId,
+                'debit' => 0.0,
+                'credit' => $amount,
+                'description' => "إلى حـ/ مجمع الإهلاك - {$description}",
+            ]
+        ];
+
+        return $this->createJournalEntry($entryDate, $description, $lines, 'depreciation_adjustment', null, $autoPost);
+    }
+
+    /**
+     * Create adjusting entry for Inventory Deficit / Loss / Shrinkage
+     * Debit: Inventory Loss Account (خسائر مخزون تالف / مفقود)
+     * Credit: Inventory Account (المخزون)
+     */
+    public function createInventoryAdjustmentJournalEntry(
+        string $entryDate,
+        int $inventoryAccountId,
+        int $lossAccountId,
+        float $amount,
+        string $description = 'قيد تسوية جردية - عجز/تلف مخزون',
+        bool $autoPost = false
+    ): JournalEntry {
+        $lines = [
+            [
+                'account_id' => $lossAccountId,
+                'debit' => $amount,
+                'credit' => 0.0,
+                'description' => "من حـ/ خسائر مخزون (تالف + مفقود) - {$description}",
+            ],
+            [
+                'account_id' => $inventoryAccountId,
+                'debit' => 0.0,
+                'credit' => $amount,
+                'description' => "إلى حـ/ المخزون - {$description}",
+            ]
+        ];
+
+        return $this->createJournalEntry($entryDate, $description, $lines, 'inventory_adjustment', null, $autoPost);
+    }
+
+    /**
+     * Validate that entry date is not within a closed period or prior to lock date.
+     */
+    public function validatePeriodNotLocked(string $entryDate): void
+    {
+        $lockDate = setting('fiscal_year_lock_date');
+        if ($lockDate && $entryDate <= $lockDate) {
+            throw new InvalidArgumentException("لا يمكن إجراء أي عمليات أو تعديلات محاسبية في فترة مالية مغلقة (الفترة مغلقة حتى تاريخ {$lockDate}).");
+        }
+
+        $fiscalPeriod = FiscalPeriod::where('start_date', '<=', $entryDate)
+            ->where('end_date', '>=', $entryDate)
+            ->first();
+
+        if ($fiscalPeriod && $fiscalPeriod->is_closed) {
+            throw new InvalidArgumentException("لا يمكن إجراء عمليات محاسبية في فترة مالية مغلقة ({$fiscalPeriod->period_name}).");
+        }
+    }
 }
+

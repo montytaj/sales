@@ -102,6 +102,13 @@
                                 <i class="bi bi-x-circle fs-5"></i>
                             </button>
                         </div>
+                        <div class="d-flex align-items-center gap-1.5 flex-wrap mt-2 text-muted fs-8">
+                            <span class="fw-bold me-1 text-dark"><i class="bi bi-keyboard text-primary me-1"></i>{{ app()->getLocale() == 'ar' ? 'اختصارات الكاشير:' : 'Shortcuts:' }}</span>
+                            <span class="badge bg-dark text-white font-mono px-2 py-1"><kbd class="bg-secondary text-white border-0">F2</kbd> {{ app()->getLocale() == 'ar' ? 'البحث والباركود' : 'Search/Barcode' }}</span>
+                            <span class="badge bg-dark text-white font-mono px-2 py-1"><kbd class="bg-secondary text-white border-0">F4</kbd> {{ app()->getLocale() == 'ar' ? 'طريقة الدفع' : 'Payment Method' }}</span>
+                            <span class="badge bg-success text-white font-mono px-2 py-1"><kbd class="bg-white text-success border-0 fw-bold">F8</kbd> {{ app()->getLocale() == 'ar' ? 'إتمام الفاتورة والطباعة' : 'Checkout & Print' }}</span>
+                            <span class="badge bg-secondary text-white font-mono px-2 py-1"><kbd class="bg-dark text-white border-0">F7</kbd> {{ app()->getLocale() == 'ar' ? 'تفريغ السلة' : 'Clear Cart' }}</span>
+                        </div>
                     </div>
                     <div class="col-12 col-md-3 text-end">
                         <div class="d-flex align-items-center justify-content-md-end gap-2">
@@ -709,18 +716,34 @@
             }
         }
 
-        // Global Keyboard Shortcuts for Cashiers (F1 search, F8 clear, F9 checkout)
+        // Global Keyboard Shortcuts for Cashiers (F2 search, F4 payment method, F8 checkout, F7 clear)
+        function cyclePosPaymentMethod() {
+            const cash = document.getElementById('payCash');
+            const card = document.getElementById('payCard');
+            const credit = document.getElementById('payCredit');
+            if (cash && cash.checked) {
+                if (card) card.checked = true;
+            } else if (card && card.checked) {
+                if (credit) credit.checked = true;
+            } else {
+                if (cash) cash.checked = true;
+            }
+        }
+
         document.addEventListener('keydown', function(e) {
-            if (e.key === 'F1' || (e.key === '/' && document.activeElement.tagName !== 'INPUT')) {
+            if (e.key === 'F2' || e.key === 'F1' || (e.key === '/' && document.activeElement.tagName !== 'INPUT')) {
                 e.preventDefault();
                 const searchEl = document.getElementById('posSearchInput');
                 if (searchEl) searchEl.focus();
-            } else if (e.key === 'F8') {
+            } else if (e.key === 'F4') {
                 e.preventDefault();
-                clearCart(true);
-            } else if (e.key === 'F9' || (e.ctrlKey && e.key === 'Enter')) {
+                cyclePosPaymentMethod();
+            } else if (e.key === 'F8' || e.key === 'F9' || (e.ctrlKey && e.key === 'Enter')) {
                 e.preventDefault();
                 checkoutPos();
+            } else if (e.key === 'F7') {
+                e.preventDefault();
+                clearCart(true);
             }
         });
 

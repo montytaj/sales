@@ -17,12 +17,11 @@
                     <thead class="table-light">
                         <tr>
                             <th>#</th>
-                            <th>كود المخزن</th>
-                            <th>اسم المخزن</th>
+                            <th>المخزن</th>
                             <th>أمين المخزن</th>
                             <th>الهاتف</th>
-                            <th>الفرع التابع</th>
-                            <th>عدد الأصناف المتوفرة</th>
+                            <th>الفرع</th>
+                            <th>الأصناف</th>
                             <th>الحالة</th>
                             <th>الإجراءات</th>
                         </tr>
@@ -31,7 +30,6 @@
                         @forelse($warehouses as $wh)
                             <tr>
                                 <td>{{ $loop->iteration }}</td>
-                                <td><span class="badge bg-secondary-subtle text-secondary font-mono">{{ $wh->code }}</span></td>
                                 <td class="fw-bold text-dark">
                                     <a href="{{ route('warehouses.show', $wh) }}" class="text-decoration-none text-primary">
                                         <i class="bi bi-box-seam me-1"></i>{{ $wh->name }}
@@ -52,22 +50,28 @@
                                         <span class="badge bg-danger-subtle text-danger">معطل</span>
                                     @endif
                                 </td>
-                                <td>
-                                    <a href="{{ route('warehouses.show', $wh) }}" class="btn btn-sm btn-outline-info me-1" title="عرض مخزون المخزن">
-                                        <i class="bi bi-eye"></i> عرض
-                                    </a>
-                                    <button class="btn btn-sm btn-outline-primary me-1" 
-                                            data-bs-toggle="modal" 
-                                            data-bs-target="#editWarehouseModal{{ $wh->id }}">
-                                        <i class="bi bi-pencil"></i> تعديل
-                                    </button>
-                                    <form action="{{ route('warehouses.destroy', $wh) }}" method="POST" class="d-inline" onsubmit="return confirm('هل أنت تأكد من حذف هذا المخزن؟')">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button class="btn btn-sm btn-outline-danger">
-                                            <i class="bi bi-trash"></i> حذف
+                                <td class="text-nowrap">
+                                    <div class="d-inline-flex align-items-center gap-1">
+                                        <a href="{{ route('warehouses.show', $wh) }}" class="btn btn-action-icon btn-action-show" title="عرض">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a href="{{ route('warehouses.opening-balances', $wh) }}" class="btn btn-action-icon btn-action-add" title="أرصدة أول المدة">
+                                            <i class="bi bi-box-arrow-in-down-left"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-action-icon btn-action-edit" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#editWarehouseModal{{ $wh->id }}"
+                                                title="تعديل">
+                                            <i class="bi bi-pencil"></i>
                                         </button>
-                                    </form>
+                                        <form action="{{ route('warehouses.destroy', $wh) }}" method="POST" class="d-inline" onsubmit="return confirm('هل أنت تأكد من حذف هذا المخزن؟')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-action-icon btn-action-delete" title="حذف">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
 
                                     <!-- Modal Edit Warehouse -->
                                     <div class="modal fade" id="editWarehouseModal{{ $wh->id }}" tabindex="-1">
@@ -133,7 +137,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="9" class="text-center text-muted py-4">لا توجد مخازن مضافة حالياً.</td>
+                                <td colspan="8" class="text-center text-muted py-4">لا توجد مخازن مضافة حالياً.</td>
                             </tr>
                         @endforelse
                     </tbody>

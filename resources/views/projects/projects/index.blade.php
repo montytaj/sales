@@ -57,10 +57,10 @@
                     <thead class="table-light">
                         <tr>
                             <th scope="col" class="ps-3">{{ __('projects.project_number') }}</th>
-                            <th scope="col">اسم المشروع</th>
+                            <th scope="col">المشروع</th>
                             <th scope="col">{{ __('customers.name') }}</th>
                             <th scope="col">الميزانية</th>
-                            <th scope="col">نسبة الإنجاز</th>
+                            <th scope="col">الإنجاز</th>
                             <th scope="col">الحالة</th>
                             <th scope="col" class="text-end pe-3">الإجراءات</th>
                         </tr>
@@ -85,10 +85,12 @@
                                         {{ __('projects.project_statuses.' . $project->status) }}
                                     </span>
                                 </td>
-                                <td class="text-end pe-3">
-                                    <a href="{{ route('projects.show', $project) }}" class="btn btn-sm btn-outline-secondary">
-                                        <i class="bi bi-eye me-1"></i>لوحة التحكم والربحية
-                                    </a>
+                                <td class="text-end pe-3 text-nowrap">
+                                    <div class="d-inline-flex align-items-center justify-content-end gap-1">
+                                        <a href="{{ route('projects.show', $project) }}" class="btn btn-action-icon btn-action-show" title="لوحة التحكم والربحية (عرض)">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                    </div>
                                 </td>
                             </tr>
                         @empty

@@ -13,6 +13,7 @@ class PaymentVoucherLine extends Model
     protected $fillable = [
         'payment_voucher_id',
         'payment_method',
+        'account_id',
         'amount',
         'reference_number',
         'notes',
@@ -25,5 +26,10 @@ class PaymentVoucherLine extends Model
     public function voucher(): BelongsTo
     {
         return $this->belongsTo(PaymentVoucher::class, 'payment_voucher_id');
+    }
+
+    public function account(): BelongsTo
+    {
+        return $this->belongsTo(Account::class, 'account_id');
     }
 }

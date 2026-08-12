@@ -16,6 +16,7 @@ use App\Http\Controllers\ChequeController;
 use App\Http\Controllers\UnitController;
 use App\Http\Controllers\ItemCategoryController;
 use App\Http\Controllers\WarehouseController;
+use App\Http\Controllers\WarehouseTransferController;
 use App\Http\Controllers\InventoryItemController;
 use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\AccountController;
@@ -80,6 +81,7 @@ Route::group([
         // Settings Routes
         Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');
         Route::post('settings', [SettingsController::class, 'update'])->name('settings.update');
+        Route::get('settings/backup-download', [SettingsController::class, 'downloadBackup'])->name('settings.backup-download');
 
         // Customers Routes
         Route::resource('customers', CustomerController::class);
@@ -97,16 +99,25 @@ Route::group([
         Route::post('signage-orders/{signageOrder}/approve-design', [\App\Http\Controllers\SignageOrderController::class, 'approveDesign'])->name('signage-orders.approve-design');
 
         // Site Surveys Routes
-        Route::resource('surveys', \App\Http\Controllers\SiteSurveyController::class);
+        Route::resource('surveys', \App\Http\Controllers\SiteSurveyController::class)->names('site-surveys');
 
         // Lookups & Master Data Routes
         Route::resource('units', UnitController::class);
         Route::resource('categories', ItemCategoryController::class);
+        Route::get('warehouses/{warehouse}/opening-balances', [WarehouseController::class, 'openingBalances'])->name('warehouses.opening-balances');
+        Route::post('warehouses/{warehouse}/opening-balances', [WarehouseController::class, 'storeOpeningBalances'])->name('warehouses.store-opening-balances');
         Route::resource('warehouses', WarehouseController::class);
 
         // Inventory Items & Movements Routes
+        Route::get('inventory/item-card', [InventoryItemController::class, 'itemCard'])->name('inventory.item-card');
         Route::resource('inventory', InventoryItemController::class);
         Route::post('inventory/scraps', [\App\Http\Controllers\InventoryController::class, 'storeScrap'])->name('inventory.scraps.store');
+
+        // Warehouse Transfers Routes
+        Route::post('warehouse-transfers/{warehouseTransfer}/complete', [WarehouseTransferController::class, 'complete'])->name('warehouse-transfers.complete');
+        Route::post('warehouse-transfers/{warehouseTransfer}/cancel', [WarehouseTransferController::class, 'cancel'])->name('warehouse-transfers.cancel');
+        Route::get('warehouse-transfers/{warehouseTransfer}/print', [WarehouseTransferController::class, 'print'])->name('warehouse-transfers.print');
+        Route::resource('warehouse-transfers', WarehouseTransferController::class);
 
         // Quotations Routes
         Route::resource('quotations', QuotationController::class);
@@ -116,29 +127,35 @@ Route::group([
 
         // POS Cashier Routes
         Route::get('pos', [\App\Http\Controllers\PosController::class, 'index'])->name('pos.index');
-        Route::post('pos', [\App\Http\Controllers\PosController::class, 'store'])->name('pos.store');
+        Route::post('pos', [\App\Http\Controllers\PosController::class, 'store'])->middleware('throttle:10,1')->name('pos.store');
 
         // Sales Invoices Routes
         Route::get('invoices/create', [InvoiceController::class, 'create'])->name('invoices.create');
-        Route::post('invoices', [InvoiceController::class, 'store'])->name('invoices.store');
+        Route::post('invoices', [InvoiceController::class, 'store'])->middleware('throttle:60,1')->name('invoices.store');
         Route::get('invoices', [InvoiceController::class, 'index'])->name('invoices.index');
         Route::get('invoices/{invoice}', [InvoiceController::class, 'show'])->name('invoices.show');
         Route::patch('invoices/{invoice}/update-status', [InvoiceController::class, 'updateStatus'])->name('invoices.update-status');
+        Route::post('invoices/batch-print', [InvoiceController::class, 'batchPrint'])->name('invoices.batch-print');
         Route::get('invoices/{invoice}/print', [InvoiceController::class, 'print'])->name('invoices.print');
 
         // Purchases & Purchase Orders Routes
         Route::get('purchases', [PurchaseController::class, 'index'])->name('purchases.index');
+        Route::get('purchases/payables', [PurchaseController::class, 'payables'])->name('purchases.payables');
         Route::get('purchases/create-invoice', [PurchaseController::class, 'createInvoice'])->name('purchases.create_invoice');
-        Route::post('purchases/store-invoice', [PurchaseController::class, 'storeInvoice'])->name('purchases.store_invoice');
+        Route::post('purchases/store-invoice', [PurchaseController::class, 'storeInvoice'])->middleware('throttle:60,1')->name('purchases.store_invoice');
         Route::post('purchases/store-po', [PurchaseController::class, 'storePo'])->name('purchases.store_po');
         Route::post('purchases/orders/{po}/receive-goods', [PurchaseController::class, 'receiveGoods'])->name('purchases.receive_goods');
         Route::get('purchases/{invoice}/show-invoice', [PurchaseController::class, 'showInvoice'])->name('purchases.show_invoice');
+        Route::get('purchases/{invoice}/pay', [PurchaseController::class, 'payInvoice'])->name('purchases.pay_invoice');
+        Route::post('purchases/{invoice}/pay', [PurchaseController::class, 'storeInvoicePayment'])->middleware('throttle:60,1')->name('purchases.store_invoice_payment');
+        Route::post('purchases/{invoice}/cancel', [PurchaseController::class, 'cancelInvoice'])->name('purchases.cancel_invoice');
+
 
         // Cashboxes Routes
         Route::resource('cashboxes', CashboxController::class);
         Route::post('cashboxes/{cashbox}/open-shift', [CashboxController::class, 'openShift'])->name('cashboxes.open-shift');
         Route::post('cashboxes/{cashbox}/close-shift', [CashboxController::class, 'closeShift'])->name('cashboxes.close-shift');
-        Route::post('cashboxes/{cashbox}/transfer', [CashboxController::class, 'transfer'])->name('cashboxes.transfer');
+        Route::post('cashboxes/{cashbox}/transfer', [CashboxController::class, 'transfer'])->middleware('throttle:60,1')->name('cashboxes.transfer');
 
         // Payment Vouchers Routes
         Route::resource('payments', PaymentVoucherController::class);
@@ -146,8 +163,12 @@ Route::group([
         Route::get('payments/{payment}/print', [PaymentVoucherController::class, 'print'])->name('payments.print');
 
         // Cheques Routes
+        Route::get('cheques/deposit-slip', [ChequeController::class, 'depositSlip'])->name('cheques.deposit-slip');
         Route::resource('cheques', ChequeController::class)->only(['index', 'show']);
         Route::patch('cheques/{cheque}/update-status', [ChequeController::class, 'updateStatus'])->name('cheques.update-status');
+        Route::post('cheques/{cheque}/clear', [ChequeController::class, 'clear'])->name('cheques.clear');
+        Route::post('cheques/{cheque}/bounce', [ChequeController::class, 'bounce'])->name('cheques.bounce');
+        Route::post('cheques/{cheque}/cancel', [ChequeController::class, 'cancel'])->name('cheques.cancel');
 
         // 5-Level Chart of Accounts Routes
         Route::get('accounting', [AccountController::class, 'index'])->name('accounting.index');
@@ -181,7 +202,17 @@ Route::group([
         Route::get('reports/workshop', [ReportController::class, 'workshop'])->name('reports.workshop');
         Route::get('reports/projects', [ReportController::class, 'projects'])->name('reports.projects');
         Route::get('reports/financial', [ReportController::class, 'financial'])->name('reports.financial');
+        Route::get('reports/financial-comparison', [ReportController::class, 'financialComparison'])->name('reports.financial-comparison');
+        Route::get('reports/balance-sheet', [ReportController::class, 'balanceSheet'])->name('reports.balance-sheet');
+        Route::get('reports/income-statement', [ReportController::class, 'incomeStatement'])->name('reports.income-statement');
+        Route::get('reports/trial-balance', [ReportController::class, 'trialBalance'])->name('reports.trial-balance');
+        Route::get('reports/cash-flow', [ReportController::class, 'cashFlow'])->name('reports.cash-flow');
+        Route::get('reports/equity-changes', [ReportController::class, 'equityChanges'])->name('reports.equity-changes');
+        Route::get('reports/general-ledger', [ReportController::class, 'generalLedger'])->name('reports.general-ledger');
+        Route::get('reports/account-balances', [ReportController::class, 'accountBalances'])->name('reports.account-balances');
+        Route::get('reports/profitable-items', [ReportController::class, 'profitableItems'])->name('reports.profitable-items');
         Route::get('reports/inventory', [ReportController::class, 'inventory'])->name('reports.inventory');
+        Route::get('reports/warehouse-inventory', [ReportController::class, 'warehouseInventory'])->name('reports.warehouse-inventory');
         Route::get('activity-logs', [\App\Http\Controllers\ActivityLogController::class, 'index'])->name('activity-logs.index');
 
         // Multi-Currency & Exchange Rates Routes

@@ -111,6 +111,10 @@ return [
     'manage-signage' => 'Approve Signage Technical Specs',
 
     'manage-inventory' => 'Manage Stock Items & Scrap Movements',
+    'view-warehouse-transfers' => 'View Warehouse Transfers & Log',
+    'create-warehouse-transfers' => 'Create New Warehouse Transfer Request',
+    'approve-warehouse-transfers' => 'Approve & Execute Warehouse Stock Transfers',
+    'delete-warehouse-transfers' => 'Cancel & Delete Warehouse Transfer Records',
     'view-purchases' => 'View Purchase Orders & Inbound Goods',
     'create-purchases' => 'Create New Purchase Order',
     'manage-purchases' => 'Receive Goods & Invoices',

@@ -12,30 +12,29 @@
 @php
     $selectedBranch = request('branch_id');
     $selectedStatus = request('status');
-    $fromDate = request('from_date');
-    $toDate = request('to_date');
+    $fromDate = request('from_date', setting('system_start_date', date('Y-m-d')));
+    $toDate = request('to_date', date('Y-m-d'));
     $preset = request('preset');
 
-    // Preset Date Calculations for quick JS/preset selection
     $user = Auth::user();
     $canViewAllBranches = $user && $user->can('reports.view_all_branches');
 @endphp
 
-<div class="card card-custom mb-4 border-0 shadow-sm" x-data="{ advancedOpen: false }">
-    <div class="card-body p-3 p-md-4">
+<div class="card border-0 shadow-sm rounded-4 mb-4 bg-white" x-data="{ advancedOpen: false }">
+    <div class="card-body p-3.5 p-md-4">
         <form method="GET" action="{{ $action }}" id="reportFilterForm">
             <!-- Hidden Preset Selector Tracker -->
             <input type="hidden" name="preset" id="filterPresetInput" value="{{ request('preset') }}">
 
-            <!-- Basic Filter Row -->
-            <div class="row g-2.5 align-items-end">
+            <!-- Row 1: Time Range Presets, Dates & Branch (4 Equal 25% Columns) -->
+            <div class="row g-3 mb-3 align-items-end">
                 @if ($showDateRange)
-                    <!-- Date Presets Dropdown -->
-                    <div class="col-12 col-sm-6 col-lg-2.5">
+                    <!-- 1. Quick Period Preset -->
+                    <div class="col-12 col-md-6 col-lg-3">
                         <label class="form-label font-semibold fs-7 text-slate-700 mb-1">
                             <i class="bi bi-calendar-range me-1 text-primary"></i> {{ __('reports.period_preset') ?? 'الفترة الزمنية السريعة' }}
                         </label>
-                        <select class="form-select fs-7" id="datePresetSelect" onchange="applyDatePreset(this.value)">
+                        <select class="form-select fs-7 py-2 rounded-3 border-slate-300" id="datePresetSelect" onchange="applyDatePreset(this.value)">
                             <option value="">-- {{ __('reports.custom_period') ?? 'فترة مخصصة' }} --</option>
                             <option value="today" {{ $preset === 'today' ? 'selected' : '' }}>{{ __('reports.preset_today') ?? 'اليوم' }}</option>
                             <option value="yesterday" {{ $preset === 'yesterday' ? 'selected' : '' }}>{{ __('reports.preset_yesterday') ?? 'أمس' }}</option>
@@ -47,23 +46,30 @@
                         </select>
                     </div>
 
-                    <div class="col-6 col-lg-2">
-                        <label for="from_date" class="form-label font-semibold fs-7 text-slate-700 mb-1">{{ __('reports.from_date') ?? 'من تاريخ' }}</label>
-                        <input type="date" name="from_date" id="from_date" class="form-control fs-7" value="{{ $fromDate }}">
+                    <!-- 2. From Date -->
+                    <div class="col-12 col-sm-6 col-lg-3">
+                        <label for="from_date" class="form-label font-semibold fs-7 text-slate-700 mb-1">
+                            <i class="bi bi-calendar3 me-1 text-primary"></i> {{ __('reports.from_date') ?? 'من تاريخ' }}
+                        </label>
+                        <input type="date" name="from_date" id="from_date" class="form-control fs-7 py-2 rounded-3 border-slate-300" value="{{ $fromDate }}">
                     </div>
 
-                    <div class="col-6 col-lg-2">
-                        <label for="to_date" class="form-label font-semibold fs-7 text-slate-700 mb-1">{{ __('reports.to_date') ?? 'إلى تاريخ' }}</label>
-                        <input type="date" name="to_date" id="to_date" class="form-control fs-7" value="{{ $toDate }}">
+                    <!-- 3. To Date -->
+                    <div class="col-12 col-sm-6 col-lg-3">
+                        <label for="to_date" class="form-label font-semibold fs-7 text-slate-700 mb-1">
+                            <i class="bi bi-calendar3 me-1 text-primary"></i> {{ __('reports.to_date') ?? 'إلى تاريخ' }}
+                        </label>
+                        <input type="date" name="to_date" id="to_date" class="form-control fs-7 py-2 rounded-3 border-slate-300" value="{{ $toDate }}">
                     </div>
                 @endif
 
                 @if ($showBranch && $branches && $canViewAllBranches)
-                    <div class="col-12 col-sm-6 col-lg-2">
+                    <!-- 4. Branch -->
+                    <div class="col-12 col-md-6 col-lg-3">
                         <label for="branch_id" class="form-label font-semibold fs-7 text-slate-700 mb-1">
                             <i class="bi bi-building me-1 text-primary"></i> {{ __('reports.branch') ?? 'الفرع' }}
                         </label>
-                        <select name="branch_id" id="branch_id" class="form-select fs-7">
+                        <select name="branch_id" id="branch_id" class="form-select fs-7 py-2 rounded-3 border-slate-300">
                             <option value="">-- {{ __('reports.all_branches') ?? 'جميع الفروع المصرحة' }} --</option>
                             @foreach ($branches as $branch)
                                 <option value="{{ $branch->id }}" {{ (string)$selectedBranch === (string)$branch->id ? 'selected' : '' }}>
@@ -73,11 +79,17 @@
                         </select>
                     </div>
                 @endif
+            </div>
 
+            <!-- Row 2: Status, Extra Custom Slot (e.g. Customer) & Filter Submit Actions -->
+            <div class="row g-3 align-items-end">
                 @if ($statuses)
-                    <div class="col-12 col-sm-6 col-lg-2">
-                        <label for="status" class="form-label font-semibold fs-7 text-slate-700 mb-1">{{ __('reports.status') ?? 'الحالة' }}</label>
-                        <select name="status" id="status" class="form-select fs-7">
+                    <!-- 1. Status Dropdown (col-md-4) -->
+                    <div class="col-12 col-md-4">
+                        <label for="status" class="form-label font-semibold fs-7 text-slate-700 mb-1">
+                            <i class="bi bi-info-circle me-1 text-primary"></i> {{ __('reports.status') ?? 'الحالة' }}
+                        </label>
+                        <select name="status" id="status" class="form-select fs-7 py-2 rounded-3 border-slate-300">
                             <option value="">-- {{ __('reports.all_statuses') ?? 'جميع الحالات' }} --</option>
                             @foreach ($statuses as $key => $label)
                                 <option value="{{ $key }}" {{ (string)$selectedStatus === (string)$key ? 'selected' : '' }}>
@@ -88,48 +100,48 @@
                     </div>
                 @endif
 
-                <!-- Dynamic Extra Inputs Slot -->
+                <!-- 2. Dynamic Extra Inputs Slot (Customer/Supplier) -->
                 @if (isset($slot) && trim($slot))
                     {{ $slot }}
                 @endif
 
-                <!-- Actions -->
-                <div class="col-12 col-md-auto ms-auto d-flex gap-2">
-                    <button type="submit" class="btn btn-primary-custom shadow-sm font-semibold fs-7 px-3">
-                        <i class="bi bi-filter me-1"></i> {{ __('reports.apply_filter') ?? 'تطبيق التقرير' }}
+                <!-- 3. Actions Submit & Reset Buttons -->
+                <div class="col-12 col-md-auto ms-auto d-flex align-items-end gap-2 pt-2 pt-md-0">
+                    <button type="submit" class="btn btn-primary font-bold shadow-sm fs-7 px-4 py-2 rounded-3 d-inline-flex align-items-center">
+                        <i class="bi bi-funnel-fill me-1.5"></i> {{ __('reports.apply_filter') ?? 'تطبيق التصفية' }}
                     </button>
                     @if (request()->hasAny(['from_date', 'to_date', 'branch_id', 'status', 'customer_id', 'supplier_id', 'cashbox_id', 'search', 'preset']))
-                        <a href="{{ strtok(url()->full(), '?') }}" class="btn btn-secondary-custom font-semibold fs-7 px-3" title="{{ __('reports.clear_filters') ?? 'مسح الفلاتر' }}">
-                            <i class="bi bi-x-lg me-1"></i> {{ __('reports.reset') ?? 'إعادة ضبط' }}
+                        <a href="{{ strtok(url()->full(), '?') }}" class="btn btn-outline-secondary font-semibold fs-7 px-3 py-2 rounded-3 d-inline-flex align-items-center" title="{{ __('reports.clear_filters') ?? 'مسح الفلاتر' }}">
+                            <i class="bi bi-arrow-counterclockwise me-1"></i> {{ __('reports.reset') ?? 'إعادة ضبط' }}
                         </a>
                     @endif
                 </div>
             </div>
 
-            <!-- Active Filter Chips -->
+            <!-- Active Filter Chips Tag Bar -->
             @if (request()->hasAny(['from_date', 'to_date', 'branch_id', 'status', 'customer_id', 'supplier_id', 'preset']))
-                <div class="d-flex flex-wrap align-items-center gap-2 mt-3 pt-2 border-top border-slate-100">
+                <div class="d-flex flex-wrap align-items-center gap-2 mt-3 pt-3 border-top border-slate-200">
                     <small class="text-slate-500 font-semibold me-1"><i class="bi bi-funnel-fill text-primary me-1"></i>{{ __('reports.active_filters') ?? 'الفلاتر النشطة' }}:</small>
                     @if ($fromDate)
-                        <span class="badge bg-slate-100 text-slate-700 border border-slate-200 fs-8 font-medium">
+                        <span class="badge bg-slate-100 text-slate-700 border border-slate-200 fs-8 font-medium px-2.5 py-1">
                             {{ __('reports.from_date') }}: {{ $fromDate }}
                         </span>
                     @endif
                     @if ($toDate)
-                        <span class="badge bg-slate-100 text-slate-700 border border-slate-200 fs-8 font-medium">
+                        <span class="badge bg-slate-100 text-slate-700 border border-slate-200 fs-8 font-medium px-2.5 py-1">
                             {{ __('reports.to_date') }}: {{ $toDate }}
                         </span>
                     @endif
                     @if ($selectedBranch && $branches)
                         @php $bName = $branches->firstWhere('id', $selectedBranch)?->name; @endphp
                         @if ($bName)
-                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle fs-8 font-medium">
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle fs-8 font-medium px-2.5 py-1">
                                 {{ __('reports.branch') }}: {{ $bName }}
                             </span>
                         @endif
                     @endif
                     @if ($selectedStatus && $statuses && isset($statuses[$selectedStatus]))
-                        <span class="badge bg-info-subtle text-info border border-info-subtle fs-8 font-medium">
+                        <span class="badge bg-info-subtle text-info border border-info-subtle fs-8 font-medium px-2.5 py-1">
                             {{ __('reports.status') }}: {{ $statuses[$selectedStatus] }}
                         </span>
                     @endif
