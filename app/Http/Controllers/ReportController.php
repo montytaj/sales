@@ -59,6 +59,7 @@ class ReportController extends Controller
      */
     public function customerStatement(Request $request)
     {
+        $this->checkReportPermission('reports.customers.view');
 
         $customers = Customer::where('is_active', true)->orderBy('name')->get();
         $branches = Branch::where('is_active', true)->get();
@@ -118,6 +119,7 @@ class ReportController extends Controller
      */
     public function supplierStatement(Request $request)
     {
+        $this->checkReportPermission('reports.suppliers.view');
 
         $suppliers = Supplier::where('is_active', true)->orderBy('name')->get();
         $branches = Branch::where('is_active', true)->get();
@@ -177,6 +179,7 @@ class ReportController extends Controller
      */
     public function sales(Request $request)
     {
+        $this->checkReportPermission('reports.sales.view');
 
         $branches = Branch::where('is_active', true)->get();
         $customers = Customer::where('is_active', true)->orderBy('name')->get();
@@ -246,6 +249,7 @@ class ReportController extends Controller
      */
     public function workshop(Request $request)
     {
+        $this->checkReportPermission('reports.workshop.view');
 
         $branches = Branch::where('is_active', true)->get();
         $filters = $request->only(['from_date', 'to_date', 'branch_id', 'status', 'priority']);
@@ -285,6 +289,7 @@ class ReportController extends Controller
      */
     public function projects(Request $request)
     {
+        $this->checkReportPermission('reports.projects.view');
 
         $branches = Branch::where('is_active', true)->get();
         $filters = $request->only(['from_date', 'to_date', 'branch_id', 'status']);
@@ -323,6 +328,7 @@ class ReportController extends Controller
      */
     public function financial(Request $request)
     {
+        $this->checkReportPermission('reports.financial.view');
 
         $branches = Branch::where('is_active', true)->get();
         $filters = $request->only(['from_date', 'to_date', 'branch_id', 'cashbox_id', 'type']);
@@ -360,6 +366,7 @@ class ReportController extends Controller
      */
     public function inventory(Request $request)
     {
+        $this->checkReportPermission('reports.inventory.view');
 
         $filters = $request->only(['category_id', 'category', 'search']);
         $inventoryData = $this->reportService->getInventoryReport($filters);
@@ -401,6 +408,7 @@ class ReportController extends Controller
      */
     public function warehouseInventory(Request $request)
     {
+        $this->checkReportPermission('reports.inventory.view');
         $filters = $request->only(['warehouse_id', 'from_date', 'to_date', 'category_id', 'search']);
         $reportData = $this->reportService->getWarehouseInventoryReport($filters);
 
@@ -461,6 +469,7 @@ class ReportController extends Controller
      */
     public function financialComparison(Request $request)
     {
+        $this->checkReportPermission('reports.financial.view');
         $branches = Branch::where('is_active', true)->get();
         $filters = $request->only(['p1_from', 'p1_to', 'p2_from', 'p2_to', 'branch_id']);
         $comparisonData = $this->reportService->getFinancialComparisonData($filters);
@@ -518,6 +527,7 @@ class ReportController extends Controller
      */
     public function profitableItems(Request $request)
     {
+        $this->checkReportPermission('reports.profitability.view');
         $branches = Branch::where('is_active', true)->get();
         $categories = \App\Models\ItemCategory::all();
         $warehouses = \App\Models\Warehouse::all();

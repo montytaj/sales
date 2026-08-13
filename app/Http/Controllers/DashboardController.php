@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Invoice;
 use App\Models\PurchaseOrder;
+use App\Models\PurchaseInvoice;
 use App\Models\Customer;
 use App\Models\Supplier;
 use App\Models\Warehouse;
@@ -18,11 +19,19 @@ class DashboardController extends Controller
     public function index($locale = 'ar')
     {
         $dashboardData = Cache::remember('dashboard_executive_summary', 300, function () {
-            $totalSales = (float) Invoice::sum('total_amount');
-            $invoicesCount = Invoice::count();
+            $totalSales = (float) Invoice::where('status', '!=', 'cancelled')->sum('total_amount');
+            $invoicesCount = Invoice::where('status', '!=', 'cancelled')->count();
 
-            $totalPurchases = (float) PurchaseOrder::sum('total_amount');
-            $purchasesCount = PurchaseOrder::count();
+            $totalPurchasesInvoices = (float) PurchaseInvoice::where('status', '!=', 'cancelled')
+                ->sum(DB::raw('COALESCE(NULLIF(net_amount, 0), total_amount)'));
+            $totalPurchaseOrders = (float) PurchaseOrder::whereNotIn('status', ['cancelled'])
+                ->whereDoesntHave('invoices')
+                ->sum(DB::raw('COALESCE(NULLIF(net_amount, 0), total_amount)'));
+            $totalPurchases = $totalPurchasesInvoices + $totalPurchaseOrders;
+
+            $purchasesInvoiceCount = PurchaseInvoice::where('status', '!=', 'cancelled')->count();
+            $poCount = PurchaseOrder::whereNotIn('status', ['cancelled'])->whereDoesntHave('invoices')->count();
+            $purchasesCount = $purchasesInvoiceCount + $poCount;
 
             $customersCount = Customer::where('is_active', true)->count();
             $suppliersCount = Supplier::where('is_active', true)->count();
@@ -67,16 +76,33 @@ class DashboardController extends Controller
                 $monthLabel = $date->translatedFormat('M Y');
                 $months[] = $monthLabel;
 
-                $mSales = Invoice::whereYear('created_at', $date->year)
+                $mSales = Invoice::where('status', '!=', 'cancelled')
+                    ->whereYear('created_at', $date->year)
                     ->whereMonth('created_at', $date->month)
                     ->sum('total_amount');
 
-                $mPurchases = PurchaseOrder::whereYear('created_at', $date->year)
+                $mPInvoices = PurchaseInvoice::where('status', '!=', 'cancelled')
+                    ->where(function($q) use ($date) {
+                        $q->where(function($q2) use ($date) {
+                            $q2->whereNotNull('invoice_date')
+                               ->whereYear('invoice_date', $date->year)
+                               ->whereMonth('invoice_date', $date->month);
+                        })->orWhere(function($q3) use ($date) {
+                            $q3->whereNull('invoice_date')
+                               ->whereYear('created_at', $date->year)
+                               ->whereMonth('created_at', $date->month);
+                        });
+                    })
+                    ->sum(DB::raw('COALESCE(NULLIF(net_amount, 0), total_amount)'));
+
+                $mPOrders = PurchaseOrder::whereNotIn('status', ['cancelled'])
+                    ->whereDoesntHave('invoices')
+                    ->whereYear('created_at', $date->year)
                     ->whereMonth('created_at', $date->month)
-                    ->sum('total_amount');
+                    ->sum(DB::raw('COALESCE(NULLIF(net_amount, 0), total_amount)'));
 
                 $salesMonthly[] = (float) $mSales;
-                $purchasesMonthly[] = (float) $mPurchases;
+                $purchasesMonthly[] = (float) ($mPInvoices + $mPOrders);
             }
 
             return [
@@ -99,3 +125,4 @@ class DashboardController extends Controller
         return view('dashboard', $dashboardData);
     }
 }
+

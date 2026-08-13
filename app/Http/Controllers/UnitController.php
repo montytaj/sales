@@ -4,17 +4,22 @@ namespace App\Http\Controllers;
 
 use App\Models\Unit;
 use Illuminate\Http\Request;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class UnitController extends Controller
 {
+    use AuthorizesRequests;
+
     public function index($locale = 'ar')
     {
+        $this->authorize('manage-inventory');
         $units = Unit::withCount(['baseItems', 'wholesaleItems'])->latest()->get();
         return view('units.index', compact('units'));
     }
 
     public function store($locale, Request $request)
     {
+        $this->authorize('manage-inventory');
         $request->validate([
             'name' => 'required|string|max:255|unique:units,name',
             'symbol' => 'nullable|string|max:20',
@@ -31,6 +36,7 @@ class UnitController extends Controller
 
     public function update($locale, Request $request, $id)
     {
+        $this->authorize('manage-inventory');
         $unit = Unit::findOrFail($id);
 
         $request->validate([
@@ -49,6 +55,7 @@ class UnitController extends Controller
 
     public function destroy($locale, $id)
     {
+        $this->authorize('manage-inventory');
         $unit = Unit::findOrFail($id);
 
         if ($unit->baseItems()->count() > 0 || $unit->wholesaleItems()->count() > 0) {

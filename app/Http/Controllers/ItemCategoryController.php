@@ -4,11 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Models\ItemCategory;
 use Illuminate\Http\Request;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class ItemCategoryController extends Controller
 {
+    use AuthorizesRequests;
+
     public function index($locale = 'ar')
     {
+        $this->authorize('manage-inventory');
         $categories = ItemCategory::with('parent')->withCount('items')->latest()->get();
         $parentCategories = ItemCategory::whereNull('parent_id')->get();
 
@@ -17,6 +21,7 @@ class ItemCategoryController extends Controller
 
     public function store($locale, Request $request)
     {
+        $this->authorize('manage-inventory');
         $request->validate([
             'name' => 'required|string|max:255|unique:item_categories,name',
             'code' => 'nullable|string|max:50|unique:item_categories,code',
@@ -37,6 +42,7 @@ class ItemCategoryController extends Controller
 
     public function update($locale, Request $request, $id)
     {
+        $this->authorize('manage-inventory');
         $category = ItemCategory::findOrFail($id);
 
         $request->validate([
@@ -59,6 +65,7 @@ class ItemCategoryController extends Controller
 
     public function destroy($locale, $id)
     {
+        $this->authorize('manage-inventory');
         $category = ItemCategory::findOrFail($id);
 
         if ($category->items()->count() > 0) {

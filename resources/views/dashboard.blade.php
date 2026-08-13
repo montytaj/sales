@@ -42,7 +42,7 @@
                 :title="app()->getLocale() == 'ar' ? 'إجمالي المشتريات' : 'Total Purchases'"
                 :value="number_format($totalPurchases, 2)"
                 :currency="setting('currency', 'SDG')"
-                :subtitle="$purchasesCount . ' ' . (app()->getLocale() == 'ar' ? 'أمر توريد' : 'Orders')"
+                :subtitle="$purchasesCount . ' ' . (app()->getLocale() == 'ar' ? 'فاتورة / أمر شراء' : 'Invoices / Orders')"
                 icon="bi-cart-check-fill"
                 color="emerald"
                 :url="route('purchases.index')"

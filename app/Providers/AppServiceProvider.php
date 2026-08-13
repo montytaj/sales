@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Cache;
 use App\Models\Invoice;
+use App\Models\PurchaseInvoice;
 use App\Models\PurchaseOrder;
 use App\Models\InventoryItem;
 use App\Models\Customer;
@@ -41,6 +42,8 @@ class AppServiceProvider extends ServiceProvider
 
         Invoice::saved($invalidateDashboardCache);
         Invoice::deleted($invalidateDashboardCache);
+        PurchaseInvoice::saved($invalidateDashboardCache);
+        PurchaseInvoice::deleted($invalidateDashboardCache);
         PurchaseOrder::saved($invalidateDashboardCache);
         PurchaseOrder::deleted($invalidateDashboardCache);
         InventoryItem::saved($invalidateDashboardCache);

@@ -5,11 +5,15 @@ namespace App\Http\Controllers;
 use App\Models\Currency;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class CurrencyController extends Controller
 {
+    use AuthorizesRequests;
+
     public function index()
     {
+        $this->authorize('manage-settings');
         $currencies = Currency::orderBy('is_base', 'desc')->orderBy('name', 'asc')->get();
         $baseCurrency = Currency::getBaseCurrency();
 
@@ -18,6 +22,7 @@ class CurrencyController extends Controller
 
     public function store(Request $request)
     {
+        $this->authorize('manage-settings');
         $validated = $request->validate([
             'code' => 'required|string|max:10|unique:currencies,code',
             'name' => 'required|string|max:100',
@@ -38,6 +43,7 @@ class CurrencyController extends Controller
 
     public function update(Request $request, $locale, $currency = null)
     {
+        $this->authorize('manage-settings');
         $currencyModel = $currency instanceof Currency ? $currency : ($locale instanceof Currency ? $locale : Currency::findOrFail($currency ?? $locale));
 
         $validated = $request->validate([
@@ -62,6 +68,7 @@ class CurrencyController extends Controller
 
     public function setBase($locale, $currency = null)
     {
+        $this->authorize('manage-settings');
         $currencyModel = $currency instanceof Currency ? $currency : ($locale instanceof Currency ? $locale : Currency::findOrFail($currency ?? $locale));
 
         Currency::where('is_base', true)->update(['is_base' => false]);
@@ -75,6 +82,7 @@ class CurrencyController extends Controller
 
     public function destroy($locale, $currency = null)
     {
+        $this->authorize('manage-settings');
         $currencyModel = $currency instanceof Currency ? $currency : ($locale instanceof Currency ? $locale : Currency::findOrFail($currency ?? $locale));
 
         if ($currencyModel->is_base) {
