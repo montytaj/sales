@@ -105,13 +105,12 @@ TRUNCATE TABLE `failed_jobs`;
 DELETE FROM `accounts` WHERE `level` > 1 OR `parent_id` IS NOT NULL;
 UPDATE `accounts` SET `balance` = 0.00;
 
-DELETE FROM `chart_of_accounts` WHERE `level` > 1 OR `parent_id` IS NOT NULL;
-UPDATE `chart_of_accounts` SET `balance` = 0.00;
+DELETE FROM `chart_of_accounts` WHERE `parent_id` IS NOT NULL;
 
 -- ----------------------------------------------------------------------------
 -- 10. إزالة أي ارتباطات متبقية بحسابات فرعية محذوفة
 -- ----------------------------------------------------------------------------
-UPDATE `cashboxes` SET `account_id` = NULL WHERE `account_id` NOT IN (SELECT `id` FROM `accounts`);
+UPDATE `cashboxes` SET `account_id` = NULL WHERE `account_id` IS NOT NULL AND `account_id` NOT IN (SELECT `id` FROM `accounts`);
 
 -- ----------------------------------------------------------------------------
 -- 11. إعادة تفعيل فحص المفاتيح الأجنبية
